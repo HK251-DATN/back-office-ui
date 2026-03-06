@@ -24,47 +24,47 @@ const Sidebar = () => {
                 <SidebarItem
                     icon={<ManageAccountsOutlinedIcon />}
                     name={"Quản lý nhân viên"}
-                    link={"/dashboard"}
+                    link={"/manage-employee"}
                 />
                 <SidebarItem
                     icon={<PeopleOutlineOutlinedIcon />}
                     name={"Quản lý khách hàng"}
-                    link={"/dashboard"}
+                    link={"/manage-customer"}
                 />
                 <SidebarItem
                     icon={<WarehouseOutlinedIcon />}
                     name={"Quản lý kho"}
-                    link={"/dashboard"}
+                    link={"/manage-warehouse"}
                 />
                 <SidebarItem
                     icon={<Inventory2OutlinedIcon />}
                     name={"Đóng gói"}
-                    link={"/dashboard"}
+                    link={"/manage-packaging"}
                 />
                 <SidebarItem
                     icon={<LocalShippingOutlinedIcon />}
                     name={"Vận chuyển"}
-                    link={"/dashboard"}
+                    link={"/manage-shipping"}
                 />
                 <SidebarItem
                     icon={<ShoppingBasketOutlinedIcon />}
                     name={"Quản lý sản phẩm"}
-                    link={"/dashboard"}
+                    link={"/manage-product"}
                 />
                 <SidebarItem
                     icon={<ArticleOutlinedIcon />}
                     name={"Quản lý nội dung"}
-                    link={"/dashboard"}
+                    link={"/manage-content"}
                 />
                 <SidebarItem
                     icon={<LoyaltyOutlinedIcon />}
                     name={"Sự kiện khuyến mãi"}
-                    link={"/dashboard"}
+                    link={"/manage-sale-event"}
                 />
                 <SidebarItem
                     icon={<SettingsOutlinedIcon />}
                     name={"Cài đặt hệ thống"}
-                    link={"/dashboard"}
+                    link={"/system-setting"}
                 />
             </div>
         </div>

@@ -1,5 +1,7 @@
+import { Outlet, Route, Routes } from "react-router-dom";
 import Header from "../components/header/Header";
 import Sidebar from "../components/sidebar/Sidebar";
+import Dashboard from "./dashboard/Dashboard";
 
 const Base = () => {
 
@@ -8,7 +10,7 @@ const Base = () => {
             <Sidebar></Sidebar>
             <div className="w-full h-full flex flex-col">
                 <Header></Header>
-                {/* Main content */}
+                <Outlet></Outlet>
             </div>
         </div>
     )
