@@ -12,7 +12,7 @@ const Header = () => {
         role: 'Quản trị viên'
     }
 
-    return (<div className="header h-15 w-full flex flex-row justify-between items-center border border-gray-200 px-5">
+    return (<div className="header shrink-0 h-15 w-full flex flex-row justify-between items-center border border-gray-200 px-5">
         {/* Search bar */}
         <span className="h-3/4 w-3/5">
             <SearchBox></SearchBox>

@@ -9,8 +9,10 @@ import UserInfo from '../../components/user-info/UserInfo';
 import EmpStatus from './EmpStatus';
 import DeleteButton from './DeleteButton';
 import EditButton from './EditButton';
+import ViewButton from './ViewButton';
 import { editEmployee } from './editEmployee';
 import { deleteEmployee } from './deleteEmployee';
+import { viewEmployee } from './viewEmployee';
 
 const ManageEmployee = () => {
     const [employees, setEmployees] = useState([])
@@ -21,7 +23,7 @@ const ManageEmployee = () => {
         })
     }, [])
 
-    const transformEmployees = (employees, editEmployee, deleteEmployee) => {
+    const transformEmployees = (employees, viewEmployee, editEmployee, deleteEmployee) => {
         return employees.map((emp) => ({
             key: emp.id,
             id: emp.id,
@@ -44,6 +46,7 @@ const ManageEmployee = () => {
 
             action: (
                 <div className="flex gap-2">
+                    <ViewButton onClick={() => viewEmployee(emp.id)}></ViewButton>
                     <EditButton onClick={() => editEmployee(emp.id)} />
                     <DeleteButton onClick={() => deleteEmployee(emp.id)} />
                 </div>
@@ -118,7 +121,7 @@ const ManageEmployee = () => {
                 <SummaryCard title="Nhân viên mới (tháng này)" content={7}></SummaryCard>
             </div>
             <div className="data-table">
-                <Table className='border border-gray-200 rounded-2xl' dataSource={transformEmployees(employees, editEmployee, deleteEmployee)} columns={columns} />
+                <Table className='border border-gray-200 rounded-2xl' dataSource={transformEmployees(employees, viewEmployee, editEmployee, deleteEmployee)} columns={columns} />
             </div>
             <div className="activity-log"></div>
         </div>

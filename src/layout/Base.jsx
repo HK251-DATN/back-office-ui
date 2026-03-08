@@ -6,11 +6,13 @@ import Dashboard from "./dashboard/Dashboard";
 const Base = () => {
 
     return (
-        <div className="w-full h-full flex flex-row">
-            <Sidebar></Sidebar>
+        <div className="w-full h-full flex flex-row overflow-hidden">
+            <Sidebar className="sticky top-0 left-0"></Sidebar>
             <div className="w-full h-full flex flex-col">
                 <Header></Header>
-                <Outlet></Outlet>
+                <div className="w-full h-full overflow-scroll">
+                    <Outlet></Outlet>
+                </div>
             </div>
         </div>
     )

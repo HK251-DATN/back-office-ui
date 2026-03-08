@@ -11,9 +11,9 @@ import LoyaltyOutlinedIcon from '@mui/icons-material/LoyaltyOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SidebarItem from "./sidebar-item/SidebarItem";
 
-const Sidebar = () => {
+const Sidebar = ({ className = "" }) => {
     return (
-        <div className="sidebar w-1/6 h-full flex flex-col border border-gray-200" >
+        <div className={`${className} sidebar w-1/6 h-full flex flex-col border border-gray-200 `} >
             <Logo />
             <div className="flex flex-col gap-2 justify-center">
                 <SidebarItem
