@@ -13,9 +13,11 @@ import ViewButton from './ViewButton';
 import { editEmployee } from './editEmployee';
 import { deleteEmployee } from './deleteEmployee';
 import { viewEmployee } from './viewEmployee';
+import CreateEmployeeModal from './create-employee/CreateEmployeeModal';
 
 const ManageEmployee = () => {
     const [employees, setEmployees] = useState([])
+    const [openCreateEmpModal, setOpenCreateEmpModal] = useState(false)
 
     useEffect(() => {
         getEmployees().then((data) => {
@@ -54,7 +56,7 @@ const ManageEmployee = () => {
         }))
     }
 
-    const columns = [
+    const empColumns = [
         {
             title: 'Id',
             dataIndex: 'id',
@@ -97,15 +99,26 @@ const ManageEmployee = () => {
         },
     ];
 
+    const handleOpenCreateEmpModal = () => {
+        console.log("clicked")
+        setOpenCreateEmpModal(true)
+    }
+
+    const handleCloseCreateEmpModal = () => {
+        setOpenCreateEmpModal(false)
+    }
+
     return (
-        <div className="flex flex-col h-full w-full p-5 gap-3 bg-gray-50">
+        <div className="flex flex-col h-fit w-full p-5 gap-3 bg-gray-50">
             <div className="header-part flex flex-row justify-between items-center">
                 <div className="title">
                     <h1 className='text-2xl font-bold mb-2'>Quản lý nhân viên</h1>
                     <p>Quản lý tài khoản và phân quyền nhân viên</p>
                 </div>
                 <div className="add-emp-button">
-                    <Button variant='contained' color="success" startIcon={<AddIcon />}>Thêm nhân viên</Button>
+                    <Button variant='contained' color="success" startIcon={<AddIcon />}
+                        onClick={handleOpenCreateEmpModal}
+                    >Thêm nhân viên</Button>
                 </div>
             </div>
             <div className="search-filter flex flex-row justify-between items-center p-5 bg-white border-gray-200 border rounded-xl">
@@ -121,9 +134,13 @@ const ManageEmployee = () => {
                 <SummaryCard title="Nhân viên mới (tháng này)" content={7}></SummaryCard>
             </div>
             <div className="data-table">
-                <Table className='border border-gray-200 rounded-2xl' dataSource={transformEmployees(employees, viewEmployee, editEmployee, deleteEmployee)} columns={columns} />
+                <Table className='border border-gray-200 rounded-2xl' dataSource={transformEmployees(employees, viewEmployee, editEmployee, deleteEmployee)} columns={empColumns} />
             </div>
             <div className="activity-log"></div>
+            {/* ABSOLUTE POSITION */}
+            <div>
+                <CreateEmployeeModal openCreateEmpModal={openCreateEmpModal} closeModal={handleCloseCreateEmpModal} />
+            </div>
         </div>
     )
 }
