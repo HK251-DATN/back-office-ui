@@ -6,18 +6,21 @@ import { useEffect, useState } from 'react';
 import { getEmployees } from '../../services/employeeService';
 import { Table } from 'antd';
 import UserInfo from '../../components/user-info/UserInfo';
-import EmpStatus from './EmpStatus';
-import DeleteButton from './DeleteButton';
-import EditButton from './EditButton';
-import ViewButton from './ViewButton';
-import { editEmployee } from './editEmployee';
-import { deleteEmployee } from './deleteEmployee';
-import { viewEmployee } from './viewEmployee';
-import CreateEmployeeModal from './create-employee/CreateEmployeeModal';
+import EmpStatus from './components/EmpStatus';
+import DeleteButton from '../../components/DeleteButton';
+import EditButton from '../../components/EditButton';
+import ViewButton from '../../components/ViewButton';
+import CreateEmployeeModal from './modals/create-employee/CreateEmployeeModal';
+import ViewEmployeeModal from './modals/view-employee/ViewEmployeeModal';
+import UpdateEmployeeModal from './modals/view-employee/UpdateEmployeeModal';
 
 const ManageEmployee = () => {
     const [employees, setEmployees] = useState([])
     const [openCreateEmpModal, setOpenCreateEmpModal] = useState(false)
+    const [openViewEmployeeModal, setOpenViewEmployeeModal] = useState(false)
+    const [openUpdateEmployeeModal, setOpenUpdateEmployeeModal] = useState(false)
+    const [curEmpInViewEmployeeModal, setCurEmpInViewEmployeeModal] = useState(null)
+    const [curEmpInUpdateEmployeeModal, setCurEmpInUpdateEmployeeModal] = useState(null)
 
     useEffect(() => {
         getEmployees().then((data) => {
@@ -25,7 +28,7 @@ const ManageEmployee = () => {
         })
     }, [])
 
-    const transformEmployees = (employees, viewEmployee, editEmployee, deleteEmployee) => {
+    const transformEmployees = (employees) => {
         return employees.map((emp) => ({
             key: emp.id,
             id: emp.id,
@@ -48,9 +51,9 @@ const ManageEmployee = () => {
 
             action: (
                 <div className="flex gap-2">
-                    <ViewButton onClick={() => viewEmployee(emp.id)}></ViewButton>
-                    <EditButton onClick={() => editEmployee(emp.id)} />
-                    <DeleteButton onClick={() => deleteEmployee(emp.id)} />
+                    <ViewButton onClick={() => { setCurEmpInViewEmployeeModal(emp); setOpenViewEmployeeModal(true) }}></ViewButton>
+                    <EditButton onClick={() => { setCurEmpInUpdateEmployeeModal(emp); setOpenUpdateEmployeeModal(true) }} />
+                    <DeleteButton />
                 </div>
             )
         }))
@@ -108,6 +111,14 @@ const ManageEmployee = () => {
         setOpenCreateEmpModal(false)
     }
 
+    const handleCloseViewEmployeeModal = () => {
+        setOpenViewEmployeeModal(false)
+    }
+
+    const handleCloseUpdateEmployeeModal = () => {
+        setOpenUpdateEmployeeModal(false)
+    }
+
     return (
         <div className="flex flex-col h-fit w-full p-5 gap-3 bg-gray-50">
             <div className="header-part flex flex-row justify-between items-center">
@@ -134,13 +145,20 @@ const ManageEmployee = () => {
                 <SummaryCard title="Nhân viên mới (tháng này)" content={7}></SummaryCard>
             </div>
             <div className="data-table">
-                <Table className='border border-gray-200 rounded-2xl' dataSource={transformEmployees(employees, viewEmployee, editEmployee, deleteEmployee)} columns={empColumns} />
+                <Table className='border border-gray-200 rounded-2xl' dataSource={transformEmployees(employees)} columns={empColumns} />
             </div>
             <div className="activity-log"></div>
             {/* ABSOLUTE POSITION */}
             <div>
                 <CreateEmployeeModal openCreateEmpModal={openCreateEmpModal} closeModal={handleCloseCreateEmpModal} />
             </div>
+            <div>
+                {openViewEmployeeModal && <ViewEmployeeModal employee={curEmpInViewEmployeeModal} openViewEmployeeModal={openViewEmployeeModal} closeModal={handleCloseViewEmployeeModal} />}
+            </div>
+            <div>
+                {openUpdateEmployeeModal && <UpdateEmployeeModal employee={curEmpInUpdateEmployeeModal} openUpdateEmployeeModal={openUpdateEmployeeModal} closeModal={handleCloseUpdateEmployeeModal} />}
+            </div>
+
         </div>
     )
 }

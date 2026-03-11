@@ -46,15 +46,17 @@ const CreateEmployeeModal = ({ openCreateEmpModal, closeModal }) => {
                     Submit
                 </Button>
             ]}>
-            <Tabs defaultActiveKey='1' items={tabItems} onChange={handleTabChange}></Tabs>
-            <TextField
-                required
-                label="Role"
-            ></TextField>
-            <TextField
-                required
-                label="Join date"
-            ></TextField>
+            <div className='flex flex-col gap-2'>
+                <Tabs defaultActiveKey='1' items={tabItems} onChange={handleTabChange}></Tabs>
+                <TextField
+                    required
+                    label="Vai trò"
+                ></TextField>
+                <TextField
+                    required
+                    label="Ngày tham gia"
+                ></TextField>
+            </div>
         </Modal>
     )
 }

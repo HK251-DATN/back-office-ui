@@ -7,7 +7,9 @@ export const employees = [
     email: "john.doe@example.com",
     phone_num: "0123456789",
     start_date: "2022-05-12",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 2,
@@ -17,7 +19,9 @@ export const employees = [
     email: "anna.smith@example.com",
     phone_num: "0987654321",
     start_date: "2023-01-10",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 3,
@@ -27,7 +31,9 @@ export const employees = [
     email: "david.nguyen@example.com",
     phone_num: "0911223344",
     start_date: "2023-09-01",
-    status: "INACTIVE"
+    status: "INACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 4,
@@ -37,7 +43,9 @@ export const employees = [
     email: "lisa.tran@example.com",
     phone_num: "0900112233",
     start_date: "2024-02-18",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 5,
@@ -47,7 +55,9 @@ export const employees = [
     email: "john.doe@example.com",
     phone_num: "0123456789",
     start_date: "2022-05-12",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 6,
@@ -57,7 +67,9 @@ export const employees = [
     email: "anna.smith@example.com",
     phone_num: "0987654321",
     start_date: "2023-01-10",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 7,
@@ -67,7 +79,9 @@ export const employees = [
     email: "david.nguyen@example.com",
     phone_num: "0911223344",
     start_date: "2023-09-01",
-    status: "INACTIVE"
+    status: "INACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 8,
@@ -77,7 +91,9 @@ export const employees = [
     email: "lisa.tran@example.com",
     phone_num: "0900112233",
     start_date: "2024-02-18",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 9,
@@ -87,7 +103,9 @@ export const employees = [
     email: "john.doe@example.com",
     phone_num: "0123456789",
     start_date: "2022-05-12",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 10,
@@ -97,7 +115,9 @@ export const employees = [
     email: "anna.smith@example.com",
     phone_num: "0987654321",
     start_date: "2023-01-10",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 11,
@@ -107,7 +127,9 @@ export const employees = [
     email: "david.nguyen@example.com",
     phone_num: "0911223344",
     start_date: "2023-09-01",
-    status: "INACTIVE"
+    status: "INACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 12,
@@ -117,7 +139,9 @@ export const employees = [
     email: "lisa.tran@example.com",
     phone_num: "0900112233",
     start_date: "2024-02-18",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 13,
@@ -127,7 +151,9 @@ export const employees = [
     email: "john.doe@example.com",
     phone_num: "0123456789",
     start_date: "2022-05-12",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 14,
@@ -137,7 +163,9 @@ export const employees = [
     email: "anna.smith@example.com",
     phone_num: "0987654321",
     start_date: "2023-01-10",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 15,
@@ -147,7 +175,9 @@ export const employees = [
     email: "david.nguyen@example.com",
     phone_num: "0911223344",
     start_date: "2023-09-01",
-    status: "INACTIVE"
+    status: "INACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 16,
@@ -157,7 +187,9 @@ export const employees = [
     email: "lisa.tran@example.com",
     phone_num: "0900112233",
     start_date: "2024-02-18",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 17,
@@ -167,7 +199,9 @@ export const employees = [
     email: "john.doe@example.com",
     phone_num: "0123456789",
     start_date: "2022-05-12",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 18,
@@ -177,7 +211,9 @@ export const employees = [
     email: "anna.smith@example.com",
     phone_num: "0987654321",
     start_date: "2023-01-10",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 19,
@@ -187,7 +223,9 @@ export const employees = [
     email: "david.nguyen@example.com",
     phone_num: "0911223344",
     start_date: "2023-09-01",
-    status: "INACTIVE"
+    status: "INACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   },
   {
     id: 20,
@@ -197,6 +235,8 @@ export const employees = [
     email: "lisa.tran@example.com",
     phone_num: "0900112233",
     start_date: "2024-02-18",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    sex: "Male",
+    dob: "2000-01-01"
   }
 ]

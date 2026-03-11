@@ -6,7 +6,7 @@ const variantStyles = {
     info: "text-blue-600"
 }
 
-const SummaryCard = ({ title, content, variant = "default" }) => {
+const SummaryCard = ({ title, content, subContent, variant = "default" }) => {
     return (
         <div className="flex flex-col justify-between bg-white rounded-xl border border-gray-200 p-4 w-full h-28 shadow-sm">
 
@@ -16,6 +16,10 @@ const SummaryCard = ({ title, content, variant = "default" }) => {
 
             <p className={`text-2xl font-semibold ${variantStyles[variant]}`}>
                 {content}
+            </p>
+
+            <p className={`text-sm ${variantStyles[variant]}`}>
+                {subContent}
             </p>
 
         </div>
