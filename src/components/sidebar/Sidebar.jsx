@@ -32,9 +32,9 @@ const Sidebar = ({ className = "" }) => {
                     link={"/manage-customer"}
                 />
                 <SidebarItem
-                    icon={<WarehouseOutlinedIcon />}
-                    name={"Quản lý kho"}
-                    link={"/manage-warehouse"}
+                    icon={<ShoppingBasketOutlinedIcon />}
+                    name={"Quản lý sản phẩm"}
+                    link={"/manage-product"}
                 />
                 <SidebarItem
                     icon={<Inventory2OutlinedIcon />}
@@ -47,9 +47,9 @@ const Sidebar = ({ className = "" }) => {
                     link={"/manage-shipping"}
                 />
                 <SidebarItem
-                    icon={<ShoppingBasketOutlinedIcon />}
-                    name={"Quản lý sản phẩm"}
-                    link={"/manage-product"}
+                    icon={<WarehouseOutlinedIcon />}
+                    name={"Quản lý kho"}
+                    link={"/manage-warehouse"}
                 />
                 <SidebarItem
                     icon={<ArticleOutlinedIcon />}
