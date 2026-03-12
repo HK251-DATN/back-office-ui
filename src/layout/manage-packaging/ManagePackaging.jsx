@@ -1,6 +1,8 @@
-import { Table } from "antd";
+import { Divider, Table } from "antd";
 import SearchBox from "../../components/search-box/SearchBox";
 import SummaryCard from "../../components/summary-card/SummaryCard";
+import { PackagingTask } from "./components/PackagingTask";
+import { PackagingEmp } from "./components/PackagingEmp";
 
 const ManagePackaging = () => {
     return (
@@ -25,15 +27,39 @@ const ManagePackaging = () => {
             </div>
 
             <div className="flex flex-row justify-between gap-3">
-                <div className="p5 bg-white rounded-xl flex flex-col gap-2">
+                <div className="p-5 bg-white rounded-xl flex flex-col w-full gap-5">
                     {/* Hàng đợi đóng gói */}
+                    <p className="text-xl font-bold">Hàng đợi đóng gói</p>
                     {/* --------------------- */}
+                    <Divider style={{ "margin": 0 }}></Divider>
                     {/* List of packaging task */}
+                    <PackagingTask />
+                    <Divider style={{ "margin": 0 }}></Divider>
+                    <PackagingTask />
+                    <Divider style={{ "margin": 0 }}></Divider>
+                    <PackagingTask />
+                    <Divider style={{ "margin": 0 }}></Divider>
+                    <PackagingTask />
+                    <Divider style={{ "margin": 0 }}></Divider>
+                    <PackagingTask />
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-5 w-2/5">
                     {/* Nhân viên đóng gói */}
+                    <div className="flex flex-col gap-5 w-full h-fit bg-white p-5  rounded-xl">
+                        <p className="text-xl font-bold">Nhân viên đóng gói</p>
+                        <Divider style={{ "margin": 0 }}></Divider>
+                        < PackagingEmp />
+                        < PackagingEmp />
+                        < PackagingEmp />
+                        < PackagingEmp />
+                        < PackagingEmp />
+                    </div>
 
                     {/* Hướng dẫn đóng gói */}
+                    <div className="flex w-full h-fit bg-white p-5">
+                        <p>Hướng dẫn đóng gói</p>
+                    </div>
+
                 </div>
             </div>
 
