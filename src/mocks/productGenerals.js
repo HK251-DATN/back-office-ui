@@ -1,6 +1,24 @@
 export const productGenerals = [
   {
-    "id": 2001,
+    "productGeneralId": 8,
+    "categoryId": 8,
+    "providerId": null,
+    "name": "Cà Chua Đà Lạt",
+    "description": "Cà chua Đà Lạt tươi ngon, giàu vitamin C, thích hợp cho món salad và nấu canh",
+    "status": "ACTIVE",
+    "tags": [
+      "rau củ",
+      "cà chua",
+      "đà lạt",
+      "vitamin"
+    ],
+    "img": "https://example.com/ca-chua-dalat.jpg",
+    "createdAt": "2026-03-22T15:13:15.865047",
+    "updatedAt": null,
+    "deletedAt": null
+  },
+  {
+    "id": 8,
     "prod_gen_name": "Fresh Atlantic Salmon",
     "created_at": "2026-01-05T10:15:00",
     "updated_at": "2026-01-05T10:15:00",

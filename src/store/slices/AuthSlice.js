@@ -13,7 +13,7 @@ export const login = createAsyncThunk(
     'auth/login',
     async (credetials, { rejectWithValue }) => {
         try {
-            const response = await fetch('http://10.205.183.181:9000/api/user/login', {
+            const response = await fetch('http://localhost:9000/api/user/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credetials)
@@ -26,8 +26,8 @@ export const login = createAsyncThunk(
 
             const data = await response.json();
 
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('token', data.detail.accessToken);
+            localStorage.setItem('user', { 'role': "ADMIN" });
 
             return data;
         } catch (error) {
@@ -86,7 +86,7 @@ export const checkAuth = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const token = localStorage.getItem('token');
-            const user = localStorage.getItem('user');
+            const user = localStorage.getItem('user') || "temp";
 
             if (!token || !user) {
                 return rejectWithValue('No stored credentials');
@@ -134,11 +134,15 @@ const authSlice = createSlice({
                 state.error = null;
             })
             .addCase(login.fulfilled, (state, action) => {
+                console.log("action: ", action)
+                console.log("state: ", state)
                 state.loading = false;
                 state.isAuthenticated = true;
-                state.user = action.payload.user;
-                state.token = action.payload.token;
-                state.role = action.payload.user.role;
+                state.user = "temp";
+                // state.user = action.payload.detail.user;
+                state.token = action.payload.detail.accessToken;
+                state.role = "ADMIN";
+                // state.role = action.payload.user.role;
                 state.error = null;
             })
             .addCase(login.rejected, (state, action) => {
