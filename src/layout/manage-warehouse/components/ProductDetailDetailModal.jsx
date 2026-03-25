@@ -77,7 +77,7 @@ function ProductDetailDetailModal({ detailId, open, onClose }) {
             {!loading && !error && data && (
                 <Descriptions bordered column={2}>
                     <Descriptions.Item label="ID" span={2}>
-                        <strong>{data.id}</strong>
+                        <strong>{data.prodDetailId}</strong>
                     </Descriptions.Item>
 
                     <Descriptions.Item label="Batch ID">

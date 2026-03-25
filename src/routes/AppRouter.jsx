@@ -13,6 +13,7 @@ import ManageSaleEvent from "../layout/manage-sale-event/ManageSaleEvent";
 import Login from "../layout/login/Login";
 import UnauthorizedPage from "../layout/pages/UnauthorizedPage";
 import ProtectedRoute from "./ProtectedRoute";
+import NotFoundPage from "../layout/pages/NotFoundPage";
 
 const AppRouter = () => {
     return (
@@ -29,66 +30,69 @@ const AppRouter = () => {
                     <Base />
                 </ProtectedRoute>} >
                 <Route index element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <Dashboard></Dashboard>
                     </ProtectedRoute>
                 } />
                 <Route path="dashboard" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <Dashboard></Dashboard>
                     </ProtectedRoute>
                 } />
                 <Route path="dashboard" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <Dashboard></Dashboard>
                     </ProtectedRoute>
                 } />
                 <Route path="manage-employee" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManageEmployee></ManageEmployee>
                     </ProtectedRoute>
                 } />
                 <Route path="manage-customer" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManageCustomer></ManageCustomer>
                     </ProtectedRoute>
                 } />
                 <Route path="manage-warehouse" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManageWarehouse></ManageWarehouse>
                     </ProtectedRoute>
                 } />
                 <Route path="manage-packaging" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManagePackaging></ManagePackaging>
                     </ProtectedRoute>
                 } />
                 <Route path="manage-shipping" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManageShipping></ManageShipping>
                     </ProtectedRoute>
                 } />
                 <Route path="manage-product" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManageProduct></ManageProduct>
                     </ProtectedRoute>
                 } />
                 <Route path="manage-content" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManageContent></ManageContent>
                     </ProtectedRoute>
                 } />
                 <Route path="manage-sale-event" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManageSaleEvent></ManageSaleEvent>
                     </ProtectedRoute>
                 } />
                 <Route path="system-setting" element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <SystemSetting></SystemSetting>
                     </ProtectedRoute>
                 } />
             </Route>
+
+            {/* 404 - Catch all */}
+            <Route path="*" element={<NotFoundPage />} />
         </Routes>
     )
 }

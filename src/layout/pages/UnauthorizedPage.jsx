@@ -21,6 +21,9 @@ function UnauthorizedPage() {
                     <Button type="primary" key="home" onClick={() => navigate('/')}>
                         Về trang chủ
                     </Button>,
+                    <Button type='default' key="change-account" onClick={() => navigate('/login')} >
+                        Đổi tài khoản
+                    </Button>,
                     <Button key="back" onClick={() => navigate(-1)}>
                         Quay lại
                     </Button>

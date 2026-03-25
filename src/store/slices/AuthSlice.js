@@ -1,12 +1,23 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
+import { getUserInfo } from "../../services/userService";
+
+// Helper function to safely parse JSON from localStorage
+const getFromStorage = (key, isJSON = true) => {
+    try {
+        const item = localStorage.getItem(key);
+        return isJSON ? JSON.parse(item) : item;
+    } catch {
+        return null;
+    }
+};
 
 const initialState = {
-    user: null,
-    token: null,
-    isAuthenticated: false,
+    user: getFromStorage('user'),
+    token: getFromStorage('token', false),
+    role: getFromStorage('role'), // roles is likely an array
+    isAuthenticated: !!localStorage.getItem('token'),
     loading: false,
-    error: null,
-    role: null
+    error: null
 }
 
 export const login = createAsyncThunk(
@@ -24,10 +35,28 @@ export const login = createAsyncThunk(
                 return rejectWithValue(error.message);
             }
 
-            const data = await response.json();
+            let data = await response.json();
+
+            const getUserRes = await getUserInfo(data.detail.user.id, data.detail.accessToken);
+
+            if (getUserRes.status !== 200) {
+                console.log("get user info fail");
+                // const error = await response.json();
+                // console.log(error);
+                // Set info to the basic user info stored in identity
+                localStorage.setItem('user', JSON.stringify(data.detail.user));
+            } else {
+                console.log("get user info success");
+
+                console.log('user: ', getUserRes.data.detail);
+
+                // Set info to the user info stored in back-office (more detail)
+                localStorage.setItem('user', JSON.stringify(getUserRes.data.detail));
+
+                data.detail.user = getUserRes.data.detail
+            }
 
             localStorage.setItem('token', data.detail.accessToken);
-            localStorage.setItem('user', { 'role': "ADMIN" });
 
             return data;
         } catch (error) {
@@ -86,7 +115,7 @@ export const checkAuth = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const token = localStorage.getItem('token');
-            const user = localStorage.getItem('user') || "temp";
+            const user = localStorage.getItem('user');
 
             if (!token || !user) {
                 return rejectWithValue('No stored credentials');
@@ -138,12 +167,15 @@ const authSlice = createSlice({
                 console.log("state: ", state)
                 state.loading = false;
                 state.isAuthenticated = true;
-                state.user = "temp";
-                // state.user = action.payload.detail.user;
+                state.user = action.payload.detail.user;
                 state.token = action.payload.detail.accessToken;
-                state.role = "ADMIN";
-                // state.role = action.payload.user.role;
+                state.role = action.payload.detail.roles;
                 state.error = null;
+
+                // ✅ CRITICAL: Persist to localStorage
+                localStorage.setItem('user', JSON.stringify(action.payload.detail.user));
+                localStorage.setItem('token', action.payload.detail.accessToken);
+                localStorage.setItem('role', JSON.stringify(action.payload.detail.roles)); // Note: roles is array
             })
             .addCase(login.rejected, (state, action) => {
                 state.loading = false;

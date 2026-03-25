@@ -139,8 +139,8 @@ function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
                         }
                     >
                         {categories.map(cat => (
-                            <Select.Option key={cat.id} value={cat.id}>
-                                {cat.name}
+                            <Select.Option key={cat.subId} value={cat.subId}>
+                                {cat.subName}
                             </Select.Option>
                         ))}
                     </Select>
