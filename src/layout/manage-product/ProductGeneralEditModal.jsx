@@ -1,13 +1,13 @@
-// src/layout/manage-product/components/ProductGeneralCreateModal.jsx
+// src/layout/manage-product/components/ProductGeneralEditModal.jsx
 import { Modal, Form, Input, Select, Tag, Button, message, Upload } from 'antd';
-import { PlusOutlined, UploadOutlined, LoadingOutlined } from '@ant-design/icons';
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
-import axios from '../../../services/axiosInstance';
+import axiosInstance from '../../services/axiosInstance';
 
 const { TextArea } = Input;
 const BASE_URL = 'http://localhost:9100';
 
-function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
+function ProductGeneralEditModal({ open, onClose, onSuccess, record }) {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [subSubcategories, setSubSubcategories] = useState([]);
@@ -23,18 +23,23 @@ function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
     const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
-        if (open) {
+        if (open && record) {
             fetchSubSubcategories();
-            form.resetFields();
-            setTags([]);
+            // Pre-fill form with existing record values
+            form.setFieldsValue({
+                prodName: record.prodName,
+                description: record.description,
+                subSubcategoryId: record.subSubcategoryId,
+            });
+            setTags(record.tags || []);
             setImageFile(null);
-            setImagePreview(null);
+            setImagePreview(record.imgUrl || null);
         }
-    }, [open, form]);
+    }, [open, record, form]);
 
     const fetchSubSubcategories = async () => {
         try {
-            const response = await axios.get(`${BASE_URL}/api/categories/sub-subcategories`);
+            const response = await axiosInstance.get(`${BASE_URL}/api/categories/sub-subcategories`);
             if (response.data.type === 'GOOD') {
                 setSubSubcategories(response.data.detail);
             }
@@ -87,45 +92,41 @@ function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
                 prodName: values.prodName,
                 description: values.description,
                 subSubcategoryId: values.subSubcategoryId,
-                imgUrl: null,
+                tags: tags,
                 preorderPolicyId: null,
                 enterpriseStoreId: null,
-                tags: tags,
             };
 
-            // Step 1: Create product general
-            const createResponse = await axios.post(`${BASE_URL}/api/product-general`, payload);
+            // Step 1: Update product general fields
+            const updateResponse = await axios.put(
+                `${BASE_URL}/api/product-general/${record.prodGenId}`,
+                payload
+            );
 
-            if (createResponse.data.type !== 'GOOD') {
-                message.error(createResponse.data.message || 'Thêm sản phẩm thất bại!');
+            if (updateResponse.data.type !== 'GOOD') {
+                message.error(updateResponse.data.message || 'Cập nhật thất bại!');
                 return;
             }
 
-            const newProdGenId = createResponse.data.detail.prodGenId;
-
-            // Step 2: Upload image if provided
+            // Step 2: Upload new image if a new file was selected
             if (imageFile) {
                 setUploading(true);
                 try {
                     const formData = new FormData();
                     formData.append('file', imageFile);
                     await axios.post(
-                        `${BASE_URL}/api/product-general/${newProdGenId}/upload-img`,
+                        `${BASE_URL}/api/product-general/${record.prodGenId}/upload-img`,
                         formData,
                         { headers: { 'Content-Type': 'multipart/form-data' } }
                     );
                 } catch (uploadErr) {
-                    message.warning('Sản phẩm đã tạo nhưng upload ảnh thất bại. Bạn có thể cập nhật ảnh sau.');
+                    message.warning('Sản phẩm đã cập nhật nhưng upload ảnh thất bại.');
                 } finally {
                     setUploading(false);
                 }
             }
 
-            message.success('Thêm sản phẩm thành công!');
-            form.resetFields();
-            setTags([]);
-            setImageFile(null);
-            setImagePreview(null);
+            message.success('Cập nhật sản phẩm thành công!');
             onSuccess?.();
             onClose();
         } catch (error) {
@@ -135,11 +136,19 @@ function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
         }
     };
 
+    const handleCancel = () => {
+        form.resetFields();
+        setTags([]);
+        setImageFile(null);
+        setImagePreview(null);
+        onClose();
+    };
+
     return (
         <Modal
-            title="Thêm sản phẩm mới"
+            title={`Chỉnh sửa sản phẩm #${record?.prodGenId}`}
             open={open}
-            onCancel={onClose}
+            onCancel={handleCancel}
             footer={null}
             width={680}
             destroyOnClose
@@ -249,16 +258,17 @@ function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
                                     border: '1px solid #e5e7eb',
                                 }}
                             />
-                            <Button danger size="small" onClick={handleRemoveImage}>
-                                Xóa ảnh
-                            </Button>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <Upload beforeUpload={beforeUpload} showUploadList={false} accept="image/*">
+                                    <Button icon={<UploadOutlined />} size="small">Đổi ảnh</Button>
+                                </Upload>
+                                <Button danger size="small" onClick={handleRemoveImage}>
+                                    Xóa ảnh
+                                </Button>
+                            </div>
                         </div>
                     ) : (
-                        <Upload
-                            beforeUpload={beforeUpload}
-                            showUploadList={false}
-                            accept="image/*"
-                        >
+                        <Upload beforeUpload={beforeUpload} showUploadList={false} accept="image/*">
                             <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
                         </Upload>
                     )}
@@ -270,13 +280,13 @@ function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
                 {/* Actions */}
                 <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                        <Button onClick={onClose}>Hủy</Button>
+                        <Button onClick={handleCancel}>Hủy</Button>
                         <Button
                             type="primary"
                             htmlType="submit"
                             loading={loading || uploading}
                         >
-                            {uploading ? 'Đang upload ảnh...' : 'Thêm sản phẩm'}
+                            {uploading ? 'Đang upload ảnh...' : 'Lưu thay đổi'}
                         </Button>
                     </div>
                 </Form.Item>
@@ -285,4 +295,4 @@ function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
     );
 }
 
-export default ProductGeneralCreateModal;
+export default ProductGeneralEditModal;

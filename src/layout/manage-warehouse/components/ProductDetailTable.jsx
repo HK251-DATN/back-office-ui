@@ -81,26 +81,26 @@ function ProductDetailTable({ refreshTrigger }) {
             title: 'ID',
             dataIndex: 'prodDetailId',
             key: 'prodDetailId',
-            width: 80,
+            width: '10%',
             sorter: (a, b) => a.prodDetailId - b.prodDetailId,
         },
         {
             title: 'Batch ID',
             dataIndex: 'batchId',
             key: 'batchId',
-            width: 100,
+            width: '10%',
         },
         {
             title: 'Product Gen ID',
             dataIndex: 'prodGenId',
             key: 'prodGenId',
-            width: 130,
+            width: '10%',
         },
         {
             title: 'Số lượng',
             dataIndex: 'unitQuantity',
             key: 'unitQuantity',
-            width: 120,
+            width: '10%',
             render: (quantity, record) => (
                 <span>
                     {quantity} {UNIT_LABELS[record.unit] || record.unit}
@@ -111,7 +111,7 @@ function ProductDetailTable({ refreshTrigger }) {
             title: 'Giá',
             dataIndex: 'price',
             key: 'price',
-            width: 120,
+            width: '10%',
             render: (price) => (
                 <span>{price?.toLocaleString('vi-VN')} ₫</span>
             ),
@@ -121,14 +121,14 @@ function ProductDetailTable({ refreshTrigger }) {
             title: 'Đánh giá',
             dataIndex: 'numOfStar',
             key: 'numOfStar',
-            width: 100,
+            width: '10%',
             render: (stars) => stars ? `${stars} ⭐` : '-',
         },
         {
             title: 'Trạng thái',
             dataIndex: 'status',
             key: 'status',
-            width: 120,
+            width: '15%',
             render: (status) => {
                 const config = STATUS_CONFIG[status] || { color: 'default', label: status };
                 return <Tag color={config.color}>{config.label}</Tag>;
@@ -143,7 +143,7 @@ function ProductDetailTable({ refreshTrigger }) {
             title: 'Ngày tạo',
             dataIndex: 'createdAt',
             key: 'createdAt',
-            width: 180,
+            width: '15%',
             render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '-',
             sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
         },
@@ -151,7 +151,7 @@ function ProductDetailTable({ refreshTrigger }) {
             title: 'Thao tác',
             key: 'action',
             fixed: 'right',
-            width: 180,
+            width: '10%',
             render: (_, record) => (
                 <Space size="small">
                     <ViewButton onClick={() => handleView(record)} />

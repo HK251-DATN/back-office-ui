@@ -37,6 +37,8 @@ export const login = createAsyncThunk(
 
             let data = await response.json();
 
+            console.log(data);
+
             const getUserRes = await getUserInfo(data.detail.user.id, data.detail.accessToken);
 
             if (getUserRes.status !== 200) {

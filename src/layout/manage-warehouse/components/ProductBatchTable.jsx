@@ -69,19 +69,26 @@ function ProductBatchTable({ refreshTrigger }) {
         message.info('Chức năng xóa đang được phát triển');
     };
 
+    // 80
+    // 120
+    // 100
+    // 120
+    // 180
+    // 180
+
     const columns = [
         {
             title: 'ID',
             dataIndex: 'batchId',
             key: 'batchId',
-            width: 80,
+            width: '10%',
             sorter: (a, b) => a.batchId - b.batchId,
         },
         {
             title: 'Số lượng',
             dataIndex: 'quantity',
             key: 'quantity',
-            width: 120,
+            width: '10%',
             render: (quantity, record) => (
                 <span>
                     {quantity} {UNIT_LABELS[record.unit] || record.unit}
@@ -92,7 +99,7 @@ function ProductBatchTable({ refreshTrigger }) {
             title: 'Đơn vị',
             dataIndex: 'unit',
             key: 'unit',
-            width: 100,
+            width: '10%',
             render: (unit) => (
                 <Tag color="blue">{UNIT_LABELS[unit] || unit}</Tag>
             ),
@@ -108,13 +115,13 @@ function ProductBatchTable({ refreshTrigger }) {
             title: 'Nhà cung cấp',
             dataIndex: 'providerId',
             key: 'providerId',
-            width: 120,
+            width: '10%',
         },
         {
             title: 'Ngày tạo',
             dataIndex: 'createdAt',
             key: 'createdAt',
-            width: 180,
+            width: '15%',
             render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '-',
             sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
         },
@@ -122,7 +129,7 @@ function ProductBatchTable({ refreshTrigger }) {
             title: 'Thao tác',
             key: 'action',
             fixed: 'right',
-            width: 180,
+            width: '10%',
             render: (_, record) => (
                 <Space size="small">
                     <ViewButton onClick={() => handleView(record)} />

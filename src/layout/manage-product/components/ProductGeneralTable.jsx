@@ -1,26 +1,34 @@
-// src/components/ProductGeneralTable.jsx
-import { Table, Tag, Space, Button, message, Alert } from 'antd';
+// src/layout/manage-product/components/ProductGeneralTable.jsx
+import { Table, Tag, Space, Button, message, Alert, Image, Popconfirm } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
-import dayjs from 'dayjs';
 import ProductDetailModal from './ProductDetailModal';
-import axios from 'axios';
+import axios from '../../../services/axiosInstance';
 import ProductGeneralCreateModal from './ProductGeneralCreateModal';
+import ProductGeneralEditModal from '../ProductGeneralEditModal';
 
 function ProductGeneralTable() {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Modal state
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState(null);
-
     const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editRecord, setEditRecord] = useState(null);
 
     const handleCreateSuccess = () => {
-        // Refresh the table
         fetchProductGenerals();
+    };
+
+    const handleEditSuccess = () => {
+        fetchProductGenerals();
+    };
+
+    const handleEdit = (record) => {
+        setEditRecord(record);
+        setEditModalOpen(true);
     };
 
     useEffect(() => {
@@ -30,62 +38,94 @@ function ProductGeneralTable() {
     const fetchProductGenerals = async () => {
         setLoading(true);
         setError(null);
-
         try {
-            const response = await axios.get('http://localhost:9300/api/product-generals?page=1&size=9999');
-
+            const response = await axios.get('http://localhost:9100/api/product-general');
             if (response.data.type === 'GOOD') {
                 setData(response.data.detail);
-                message.success('Tải dữ liệu thành công!');
             } else {
                 setError(response.data.message);
-                message.error(response.data.message);
             }
         } catch (err) {
             const errorMsg = err.response?.data?.message || 'Không thể tải danh sách sản phẩm';
             setError(errorMsg);
-            message.error(errorMsg);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleViewDetails = (productId) => {
-        setSelectedProductId(productId);
+    const handleViewDetails = (prodGenId) => {
+        setSelectedProductId(prodGenId);
         setModalOpen(true);
     };
 
-    const handleEdit = (record) => {
-        message.info(`Chỉnh sửa sản phẩm: ${record.name}`);
-        // TODO: Implement edit functionality
-    };
-
-    const handleDelete = (record) => {
-        message.warning(`Xóa sản phẩm: ${record.name}`);
-        // TODO: Implement delete functionality
+    const handleDelete = async (record) => {
+        try {
+            const response = await axios.delete(`http://localhost:9100/api/product-general/${record.prodGenId}`);
+            if (response.data.type === 'GOOD') {
+                message.success('Xóa sản phẩm thành công!');
+                fetchProductGenerals();
+            } else {
+                message.error(response.data.message || 'Xóa thất bại!');
+            }
+        } catch (err) {
+            message.error(err.response?.data?.message || 'Có lỗi xảy ra khi xóa!');
+        }
     };
 
     const columns = [
         {
             title: 'ID',
-            dataIndex: 'productGeneralId',
-            key: 'productGeneralId',
-            width: 60,
-            sorter: (a, b) => a.productGeneralId - b.productGeneralId,
+            dataIndex: 'prodGenId',
+            key: 'prodGenId',
+            width: 70,
+            sorter: (a, b) => a.prodGenId - b.prodGenId,
+        },
+        {
+            title: 'Hình ảnh',
+            dataIndex: 'imgUrl',
+            key: 'imgUrl',
+            width: 90,
+            render: (imgUrl) =>
+                imgUrl ? (
+                    <Image
+                        src={imgUrl}
+                        alt="product"
+                        width={50}
+                        height={50}
+                        style={{ objectFit: 'cover', borderRadius: 6 }}
+                        fallback="https://via.placeholder.com/50x50?text=N/A"
+                    />
+                ) : (
+                    <div
+                        style={{
+                            width: 50,
+                            height: 50,
+                            background: '#f5f5f5',
+                            borderRadius: 6,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#bbb',
+                            fontSize: 11,
+                        }}
+                    >
+                        N/A
+                    </div>
+                ),
         },
         {
             title: 'Tên sản phẩm',
-            dataIndex: 'name',
-            key: 'name',
+            dataIndex: 'prodName',
+            key: 'prodName',
             width: 200,
             ellipsis: true,
-            sorter: (a, b) => a.name.localeCompare(b.name),
+            sorter: (a, b) => a.prodName.localeCompare(b.prodName),
         },
         {
             title: 'Mô tả',
             dataIndex: 'description',
             key: 'description',
-            width: 300,
+            width: 280,
             ellipsis: true,
             render: (text) => (
                 <span style={{ color: '#666' }}>
@@ -94,52 +134,32 @@ function ProductGeneralTable() {
             ),
         },
         {
-            title: 'Trạng thái',
-            dataIndex: 'status',
-            key: 'status',
+            title: 'Danh mục con',
+            dataIndex: 'subSubcategoryId',
+            key: 'subSubcategoryId',
             width: 120,
-            filters: [
-                { text: 'Đang hoạt động', value: 'ACTIVE' },
-                { text: 'Ngừng hoạt động', value: 'INACTIVE' },
-            ],
-            onFilter: (value, record) => record.status === value,
-            render: (status) => (
-                <Tag color={status === 'ACTIVE' ? 'green' : 'red'}>
-                    {status === 'ACTIVE' ? 'Hoạt động' : 'Ngừng'}
-                </Tag>
-            ),
+            render: (id) => <Tag color="blue">#{id}</Tag>,
         },
         {
             title: 'Tags',
             dataIndex: 'tags',
             key: 'tags',
-            width: 250,
-            render: (tags) => (
-                <>
-                    {tags && tags.length > 0 ? (
-                        tags.map((tag, index) => (
-                            <Tag key={index} color="blue" style={{ marginBottom: 4 }}>
-                                {tag}
-                            </Tag>
-                        ))
-                    ) : (
-                        <span style={{ color: '#999' }}>Không có tags</span>
-                    )}
-                </>
-            ),
-        },
-        {
-            title: 'Ngày tạo',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            width: 150,
-            sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-            render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+            width: 220,
+            render: (tags) =>
+                tags && tags.length > 0 ? (
+                    tags.map((tag, index) => (
+                        <Tag key={index} color="green" style={{ marginBottom: 4 }}>
+                            {tag}
+                        </Tag>
+                    ))
+                ) : (
+                    <span style={{ color: '#bbb' }}>—</span>
+                ),
         },
         {
             title: 'Hành động',
             key: 'action',
-            width: 200,
+            width: 240,
             fixed: 'right',
             render: (_, record) => (
                 <Space size="small">
@@ -147,7 +167,7 @@ function ProductGeneralTable() {
                         type="primary"
                         size="small"
                         icon={<EyeOutlined />}
-                        onClick={() => handleViewDetails(record.productGeneralId)}
+                        onClick={() => handleViewDetails(record.prodGenId)}
                     >
                         Xem
                     </Button>
@@ -158,14 +178,18 @@ function ProductGeneralTable() {
                     >
                         Sửa
                     </Button>
-                    <Button
-                        danger
-                        size="small"
-                        icon={<DeleteOutlined />}
-                        onClick={() => handleDelete(record)}
+                    <Popconfirm
+                        title="Xóa sản phẩm?"
+                        description="Bạn có chắc muốn xóa sản phẩm này không?"
+                        onConfirm={() => handleDelete(record)}
+                        okText="Xóa"
+                        cancelText="Hủy"
+                        okButtonProps={{ danger: true }}
                     >
-                        Xóa
-                    </Button>
+                        <Button danger size="small" icon={<DeleteOutlined />}>
+                            Xóa
+                        </Button>
+                    </Popconfirm>
                 </Space>
             ),
         },
@@ -198,13 +222,13 @@ function ProductGeneralTable() {
                 columns={columns}
                 dataSource={data}
                 loading={loading}
-                rowKey="productGeneralId"
-                scroll={{ x: 1500 }}
+                rowKey="prodGenId"
+                scroll={{ x: 1200 }}
                 pagination={{
                     pageSize: 10,
                     showSizeChanger: true,
                     showTotal: (total) => `Tổng ${total} sản phẩm`,
-                    pageSizeOptions: ['10', '20', '50', '100'],
+                    pageSizeOptions: ['10', '20', '50'],
                 }}
                 bordered
             />
@@ -222,6 +246,16 @@ function ProductGeneralTable() {
                 open={createModalOpen}
                 onClose={() => setCreateModalOpen(false)}
                 onSuccess={handleCreateSuccess}
+            />
+
+            <ProductGeneralEditModal
+                open={editModalOpen}
+                onClose={() => {
+                    setEditModalOpen(false);
+                    setEditRecord(null);
+                }}
+                onSuccess={handleEditSuccess}
+                record={editRecord}
             />
         </div>
     );

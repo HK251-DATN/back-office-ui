@@ -1,8 +1,9 @@
-// src/components/ProductDetailModal.jsx
+// src/layout/manage-product/components/ProductDetailModal.jsx
 import { Modal, Spin, Tag, Image, Descriptions, Alert } from 'antd';
 import { useState, useEffect } from 'react';
-import dayjs from 'dayjs';
-import axios from 'axios';
+import axios from '../../../services/axiosInstance';
+
+const BASE_URL = 'http://localhost:9100';
 
 function ProductDetailModal({ productId, open, onClose }) {
     const [loading, setLoading] = useState(false);
@@ -18,10 +19,8 @@ function ProductDetailModal({ productId, open, onClose }) {
     const fetchProductDetails = async () => {
         setLoading(true);
         setError(null);
-
         try {
-            const response = await axios.get(`http://localhost:9300/api/product-generals/${productId}`);
-
+            const response = await axios.get(`${BASE_URL}/api/product-general/${productId}`);
             if (response.data.type === 'GOOD') {
                 setProduct(response.data.detail);
             } else {
@@ -46,13 +45,13 @@ function ProductDetailModal({ productId, open, onClose }) {
             open={open}
             onCancel={handleClose}
             footer={null}
-            width={800}
+            width={700}
             destroyOnClose
         >
             {loading && (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                     <Spin size="large" />
-                    <p style={{ marginTop: 16 }}>Đang tải thông tin sản phẩm...</p>
+                    <p style={{ marginTop: 16, color: '#999' }}>Đang tải thông tin sản phẩm...</p>
                 </div>
             )}
 
@@ -69,40 +68,30 @@ function ProductDetailModal({ productId, open, onClose }) {
             {product && !loading && (
                 <div>
                     {/* Product Image */}
-                    <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                        <Image
-                            src={product.img}
-                            alt={product.name}
-                            style={{ maxWidth: '100%', maxHeight: 400, objectFit: 'cover' }}
-                            fallback="https://via.placeholder.com/400x300?text=No+Image"
-                        />
-                    </div>
+                    {product.imgUrl && (
+                        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                            <Image
+                                src={product.imgUrl}
+                                alt={product.prodName}
+                                style={{ maxWidth: '100%', maxHeight: 300, objectFit: 'cover', borderRadius: 8 }}
+                                fallback="https://via.placeholder.com/400x300?text=No+Image"
+                            />
+                        </div>
+                    )}
 
                     {/* Product Info */}
                     <Descriptions
-                        title={product.name}
+                        title={product.prodName}
                         bordered
                         column={2}
-                        labelStyle={{ fontWeight: 'bold', width: '30%' }}
+                        labelStyle={{ fontWeight: 600, width: '30%' }}
                     >
                         <Descriptions.Item label="Mã sản phẩm" span={2}>
-                            {product.productGeneralId}
+                            #{product.prodGenId}
                         </Descriptions.Item>
 
-                        <Descriptions.Item label="Danh mục" span={2}>
-                            Danh mục #{product.categoryId}
-                        </Descriptions.Item>
-
-                        {product.providerId && (
-                            <Descriptions.Item label="Nhà cung cấp" span={2}>
-                                Nhà cung cấp #{product.providerId}
-                            </Descriptions.Item>
-                        )}
-
-                        <Descriptions.Item label="Trạng thái" span={2}>
-                            <Tag color={product.status === 'ACTIVE' ? 'green' : 'red'}>
-                                {product.status === 'ACTIVE' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
-                            </Tag>
+                        <Descriptions.Item label="Danh mục con" span={2}>
+                            <Tag color="blue">#{product.subSubcategoryId}</Tag>
                         </Descriptions.Item>
 
                         <Descriptions.Item label="Mô tả" span={2}>
@@ -112,25 +101,26 @@ function ProductDetailModal({ productId, open, onClose }) {
                         <Descriptions.Item label="Tags" span={2}>
                             {product.tags && product.tags.length > 0 ? (
                                 product.tags.map((tag, index) => (
-                                    <Tag key={index} color="blue">
+                                    <Tag key={index} color="green">
                                         {tag}
                                     </Tag>
                                 ))
                             ) : (
-                                <span style={{ color: '#999' }}>Không có tags</span>
+                                <span style={{ color: '#bbb' }}>Không có tags</span>
                             )}
                         </Descriptions.Item>
 
-                        <Descriptions.Item label="Ngày tạo">
-                            {dayjs(product.createdAt).format('DD/MM/YYYY HH:mm')}
-                        </Descriptions.Item>
+                        {product.preorderPolicyId && (
+                            <Descriptions.Item label="Preorder Policy" span={2}>
+                                #{product.preorderPolicyId}
+                            </Descriptions.Item>
+                        )}
 
-                        <Descriptions.Item label="Cập nhật lần cuối">
-                            {product.updatedAt
-                                ? dayjs(product.updatedAt).format('DD/MM/YYYY HH:mm')
-                                : 'Chưa cập nhật'
-                            }
-                        </Descriptions.Item>
+                        {product.enterpriseStoreId && (
+                            <Descriptions.Item label="Enterprise Store" span={2}>
+                                #{product.enterpriseStoreId}
+                            </Descriptions.Item>
+                        )}
                     </Descriptions>
                 </div>
             )}

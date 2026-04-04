@@ -8,65 +8,69 @@ import { buyers } from "../../mocks/buyers";
 import ViewButton from "../../components/ViewButton";
 import EditButton from "../../components/EditButton";
 import DeleteButton from "../../components/DeleteButton";
+import { useState } from "react";
+import BuyerTable from "./components/BuyerTable";
 
 const ManageCustomer = () => {
 
-    const transformBuyer = (buyers) => {
-        return buyers.map((buyer) => ({
-            key: buyer.id,
-            id: buyer.id,
-            cusInfo: (<CustomerInfo avtUrl={buyer.avatar_url} cusName={buyer.first_name + ' ' + buyer.last_name} startAt={buyer.created_at} />),
-            cusContact: (<CustomerContact email={buyer.email} phone_num={buyer.phone_number} />),
-            cusNumOrder: buyer.total_orders,
-            cusTotalSpending: `${buyer.total_spend_amount} đ`,
-            status: (< CustomerStatus status={buyer.account_status} />),
-            action: (
-                <div className="flex gap-2">
-                    <ViewButton />
-                    <EditButton />
-                    <DeleteButton />
-                </div>
-            )
-        }))
-    }
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-    const cusColumns = [
-        {
-            title: 'Id',
-            dataIndex: 'id',
-            key: 'id',
-        },
-        {
-            title: 'Khách hàng',
-            dataIndex: 'cusInfo',
-            key: 'cusInfo',
-        },
-        {
-            title: 'Liên hệ',
-            dataIndex: 'cusContact',
-            key: 'cusContact',
-        },
-        {
-            title: 'Tổng đơn',
-            dataIndex: 'cusNumOrder',
-            key: 'cusNumOrder',
-        },
-        {
-            title: 'Tổng chi tiêu',
-            dataIndex: 'cusTotalSpending',
-            key: 'cusTotalSpending',
-        },
-        {
-            title: 'Trạng thái',
-            dataIndex: 'status',
-            key: 'status',
-        },
-        {
-            title: 'Hành động',
-            dataIndex: 'action',
-            key: 'action'
-        },
-    ];
+    // const transformBuyer = (buyers) => {
+    //     return buyers.map((buyer) => ({
+    //         key: buyer.id,
+    //         id: buyer.id,
+    //         cusInfo: (<CustomerInfo avtUrl={buyer.avatar_url} cusName={buyer.first_name + ' ' + buyer.last_name} startAt={buyer.created_at} />),
+    //         cusContact: (<CustomerContact email={buyer.email} phone_num={buyer.phone_number} />),
+    //         cusNumOrder: buyer.total_orders,
+    //         cusTotalSpending: `${buyer.total_spend_amount} đ`,
+    //         status: (< CustomerStatus status={buyer.account_status} />),
+    //         action: (
+    //             <div className="flex gap-2">
+    //                 <ViewButton />
+    //                 <EditButton />
+    //                 <DeleteButton />
+    //             </div>
+    //         )
+    //     }))
+    // }
+
+    // const cusColumns = [
+    //     {
+    //         title: 'Id',
+    //         dataIndex: 'id',
+    //         key: 'id',
+    //     },
+    //     {
+    //         title: 'Khách hàng',
+    //         dataIndex: 'cusInfo',
+    //         key: 'cusInfo',
+    //     },
+    //     {
+    //         title: 'Liên hệ',
+    //         dataIndex: 'cusContact',
+    //         key: 'cusContact',
+    //     },
+    //     {
+    //         title: 'Tổng đơn',
+    //         dataIndex: 'cusNumOrder',
+    //         key: 'cusNumOrder',
+    //     },
+    //     {
+    //         title: 'Tổng chi tiêu',
+    //         dataIndex: 'cusTotalSpending',
+    //         key: 'cusTotalSpending',
+    //     },
+    //     {
+    //         title: 'Trạng thái',
+    //         dataIndex: 'status',
+    //         key: 'status',
+    //     },
+    //     {
+    //         title: 'Hành động',
+    //         dataIndex: 'action',
+    //         key: 'action'
+    //     },
+    // ];
 
     return (
         <div className="flex flex-col h-fit w-full p-5 gap-3 bg-gray-50 overflow-scroll">
@@ -88,7 +92,7 @@ const ManageCustomer = () => {
                 <div className='filter'>Filter</div>
             </div>
             <div className="data-table">
-                <Table columns={cusColumns} dataSource={transformBuyer(buyers)} className='border border-gray-200 rounded-2xl' />
+                <BuyerTable refreshTrigger={refreshTrigger} />
             </div>
         </div>
     )
