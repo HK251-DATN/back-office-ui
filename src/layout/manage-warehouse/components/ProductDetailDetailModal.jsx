@@ -2,7 +2,8 @@
 import { Modal, Descriptions, Spin, Alert, Tag } from 'antd';
 import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
-import axios from 'axios';
+import axios from '../../../services/axiosInstance';
+import { API_URLS } from '../../../config/api';
 
 const UNIT_LABELS = {
     KILOGRAM: 'Kilogram (Kg)',
@@ -13,7 +14,6 @@ const UNIT_LABELS = {
 
 const STATUS_CONFIG = {
     STORED: { color: 'green', label: 'Đã lưu kho' },
-    PROCESSING: { color: 'blue', label: 'Đang xử lý' },
     SOLD: { color: 'orange', label: 'Đã bán' },
     EXPIRED: { color: 'red', label: 'Hết hạn' },
 };
@@ -34,7 +34,7 @@ function ProductDetailDetailModal({ detailId, open, onClose }) {
         setError(null);
 
         try {
-            const response = await axios.get(`http://localhost:9200/api/product-detail/${detailId}`);
+            const response = await axios.get(`${API_URLS.STORAGE}/api/product-detail/${detailId}`);
 
             if (response.data.type === 'GOOD') {
                 setData(response.data.detail);

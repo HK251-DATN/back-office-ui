@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { Table, Tag, message, Space, Avatar } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import axios from 'axios';
+import axios from '../../../services/axiosInstance';
+import { API_URLS } from '../../../config/api';
 import ViewButton from '../../../components/ViewButton';
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
@@ -43,11 +44,7 @@ function BuyerTable({ refreshTrigger }) {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const response = await axios.get('http://localhost:9100/api/buyer', {
-                headers: {
-                    Authorization: `Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpc3MiOiJpZGVudGl0eS1zZXJ2aWNlIiwiaWF0IjoxNzc0NDg5Mzk3LCJleHAiOjE3NzQ1NzU3OTcsInVzZXJJZCI6MSwidXNlckVtYWlsIjoiYWRtaW5AZ21haWwuY29tIiwicGVybWlzc2lvbnMiOlsiVVNFUl9WSUVXIiwiVVNFUl9DUkVBVEUiLCJVU0VSX1VQREFURSIsIlVTRVJfREVMRVRFIiwiR1JPVVBfVklFVyIsIkdST1VQX01BTkFHRSIsIlBFUk1JU1NJT05fVklFVyIsIlBFUk1JU1NJT05fTUFOQUdFIl19.cc6aj3fQvzV1BPtEiSO57BWeb8wa8-mvUrr83_GOmCh8CmBgB0UdlDEbG9FqDG0eq4n0ssVVIB7JOoWMkq3QmsksECyTgEh4PLpIWj23VWWwK-U2IJyWqA_xlJj7HuZeWkO_RsAxNhIrUHQnu0ck6EtyUhgiGBjbMfc2C9_nwUMINgbH1-rdDIlMdoYYwOggVk2yespgBRikBrA10isgbbd8L-yfb88IWXP6DCBrWLGcUi2f6suMuIi07f2LSU2d6VwPUOU26jSDO-lYVy6uDqELh7YF9GP99UGGdDM7V0Ji3VIKQx6Mnm3zf5zjl2NBDA7fjuQUieBxr-AHFPLfwg}`,
-                },
-            });
+            const response = await axios.get(`${API_URLS.MAIN}/api/buyer/admin`);
 
             if (response.data.code === '200 OK') {
                 const buyers = response.data.detail;

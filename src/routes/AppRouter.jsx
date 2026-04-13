@@ -10,6 +10,8 @@ import ManagePackaging from "../layout/manage-packaging/ManagePackaging";
 import ManageShipping from "../layout/manage-shipping/ManageShipping";
 import ManageProduct from "../layout/manage-product/ManageProduct";
 import ManageSaleEvent from "../layout/manage-sale-event/ManageSaleEvent";
+import ManageCategory from "../layout/manage-category/ManageCategory";
+import ManageOrder from "../layout/manage-order/ManageOrder";
 import Login from "../layout/login/Login";
 import UnauthorizedPage from "../layout/pages/UnauthorizedPage";
 import ProtectedRoute from "./ProtectedRoute";
@@ -72,6 +74,16 @@ const AppRouter = () => {
                 <Route path="manage-product" element={
                     <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManageProduct></ManageProduct>
+                    </ProtectedRoute>
+                } />
+                <Route path="manage-category" element={
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
+                        <ManageCategory></ManageCategory>
+                    </ProtectedRoute>
+                } />
+                <Route path="manage-order" element={
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
+                        <ManageOrder></ManageOrder>
                     </ProtectedRoute>
                 } />
                 <Route path="manage-content" element={

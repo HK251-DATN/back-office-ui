@@ -7,13 +7,15 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import ShoppingBasketOutlinedIcon from '@mui/icons-material/ShoppingBasketOutlined';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import LoyaltyOutlinedIcon from '@mui/icons-material/LoyaltyOutlined';
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SidebarItem from "./sidebar-item/SidebarItem";
 
 const Sidebar = ({ className = "" }) => {
     return (
-        <div className={`${className} sidebar w-1/6 h-full flex flex-col border border-gray-200 `} >
+        <div className={`${className} sidebar w-1/8 shrink-0 h-full flex flex-col border border-gray-200 `} >
             <Logo />
             <div className="flex flex-col gap-2 justify-center">
                 <SidebarItem
@@ -35,6 +37,16 @@ const Sidebar = ({ className = "" }) => {
                     icon={<ShoppingBasketOutlinedIcon />}
                     name={"Quản lý sản phẩm"}
                     link={"/manage-product"}
+                />
+                <SidebarItem
+                    icon={<CategoryOutlinedIcon />}
+                    name={"Quản lý danh mục"}
+                    link={"/manage-category"}
+                />
+                <SidebarItem
+                    icon={<ShoppingCartOutlinedIcon />}
+                    name={"Quản lý đơn hàng"}
+                    link={"/manage-order"}
                 />
                 <SidebarItem
                     icon={<Inventory2OutlinedIcon />}

@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
 import { getUserInfo } from "../../services/userService";
+import { API_URLS } from "../../config/api";
 
 // Helper function to safely parse JSON from localStorage
 const getFromStorage = (key, isJSON = true) => {
@@ -24,7 +25,7 @@ export const login = createAsyncThunk(
     'auth/login',
     async (credetials, { rejectWithValue }) => {
         try {
-            const response = await fetch('http://localhost:9000/api/user/login', {
+            const response = await fetch(`${API_URLS.AUTH}/api/user/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credetials)

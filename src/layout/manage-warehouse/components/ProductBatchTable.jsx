@@ -1,12 +1,14 @@
 // src/components/warehouse/ProductBatchTable.jsx
-import { useState, useEffect } from 'react';
-import { Table, Tag, message, Space } from 'antd';
+import { useState, useEffect, useCallback } from 'react';
+import { Table, Tag, message, Space, Modal } from 'antd';
 import ProductBatchDetailModal from './ProductBatchDetailModal';
+import ProductBatchEditModal from './ProductBatchEditModal';
 import dayjs from 'dayjs';
 import ViewButton from '../../../components/ViewButton';
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
-import axios from 'axios';
+import { getProductBatches, deleteProductBatch } from '../../../services/productBatchService';
+import { getSubSubcategories } from '../../../services/categoryService';
 
 const UNIT_LABELS = {
     KILOGRAM: 'Kg',
@@ -25,19 +27,32 @@ function ProductBatchTable({ refreshTrigger }) {
     });
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [selectedBatchId, setSelectedBatchId] = useState(null);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [selectedBatch, setSelectedBatch] = useState(null);
+    const [subSubcategories, setSubSubcategories] = useState([]);
 
-    useEffect(() => {
-        fetchData();
-    }, [pagination.current, pagination.pageSize, refreshTrigger]);
+    const fetchSubSubcategories = useCallback(async () => {
+        try {
+            const response = await getSubSubcategories();
+            if (response.data.type === 'GOOD') {
+                setSubSubcategories(response.data.detail);
+            }
+        } catch (error) {
+            console.error('Failed to fetch sub-subcategories:', error);
+        }
+    }, []);
 
-    const fetchData = async () => {
+    const getSubSubcategoryName = (id) => {
+        const category = subSubcategories.find(cat => cat.subSubcategoryId === id);
+        return category ? category.name : '';
+    };
+
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await axios.get('http://localhost:9200/api/product-batch', {
-                params: {
-                    page: pagination.current - 1,
-                    size: pagination.pageSize,
-                },
+            const response = await getProductBatches({
+                pageNum: pagination.current,
+                pageSize: pagination.pageSize,
             });
 
             if (response.data.type === 'GOOD') {
@@ -45,8 +60,10 @@ function ProductBatchTable({ refreshTrigger }) {
                 setData(Array.isArray(batches) ? batches : []);
                 setPagination(prev => ({
                     ...prev,
-                    total: response.data.totalElements || batches.length,
+                    total: response.data.totalElements || (Array.isArray(batches) ? batches.length : 0),
                 }));
+            } else if (response.data.type === 'SKIP_AS_GOOD') {
+                setData([]);
             }
         } catch (error) {
             message.error('Không thể tải dữ liệu product batch');
@@ -54,7 +71,12 @@ function ProductBatchTable({ refreshTrigger }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.current, pagination.pageSize]);
+
+    useEffect(() => {
+        fetchData();
+        fetchSubSubcategories();
+    }, [fetchData, fetchSubSubcategories, refreshTrigger]);
 
     const handleView = (record) => {
         setSelectedBatchId(record.batchId);
@@ -62,27 +84,56 @@ function ProductBatchTable({ refreshTrigger }) {
     };
 
     const handleEdit = (record) => {
-        message.info('Chức năng chỉnh sửa đang được phát triển');
+        setSelectedBatch(record);
+        setEditModalOpen(true);
+    };
+
+    const handleEditSuccess = () => {
+        fetchData();
     };
 
     const handleDelete = (record) => {
-        message.info('Chức năng xóa đang được phát triển');
+        Modal.confirm({
+            title: 'Bạn có chắc chắn muốn xóa lô hàng này?',
+            content: `ID Lô hàng: ${record.batchId}`,
+            okText: 'Xóa',
+            okType: 'danger',
+            cancelText: 'Hủy',
+            onOk: async () => {
+                try {
+                    const response = await deleteProductBatch(record.batchId);
+                    if (response.data.type === 'GOOD') {
+                        message.success('Xóa lô hàng thành công');
+                        fetchData();
+                    } else {
+                        message.error(response.data.message || 'Xóa lô hàng thất bại');
+                    }
+                } catch (error) {
+                    message.error('Lỗi khi xóa lô hàng');
+                    console.error('Delete error:', error);
+                }
+            },
+        });
     };
-
-    // 80
-    // 120
-    // 100
-    // 120
-    // 180
-    // 180
 
     const columns = [
         {
             title: 'ID',
             dataIndex: 'batchId',
             key: 'batchId',
-            width: '10%',
+            width: '5%',
             sorter: (a, b) => a.batchId - b.batchId,
+        },
+        {
+            title: 'Danh mục',
+            dataIndex: 'subSubcategoryId',
+            key: 'subSubcategoryId',
+            width: '15%',
+            ellipsis: true,
+            render: (id) => {
+                const name = getSubSubcategoryName(id);
+                return name ? `${id}-${name}` : `#${id}`;
+            },
         },
         {
             title: 'Số lượng',
@@ -99,15 +150,32 @@ function ProductBatchTable({ refreshTrigger }) {
             title: 'Đơn vị',
             dataIndex: 'unit',
             key: 'unit',
-            width: '10%',
+            width: '8%',
             render: (unit) => (
                 <Tag color="blue">{UNIT_LABELS[unit] || unit}</Tag>
             ),
         },
         {
+            title: 'Trạng thái',
+            dataIndex: 'processStatus',
+            key: 'processStatus',
+            width: '10%',
+            render: (processStatus) => {
+                if (!processStatus) return <Tag>Chưa xác định</Tag>;
+                const statusConfig = {
+                    PENDING: { color: 'orange', label: 'Chờ xử lý' },
+                    COMPLETED: { color: 'green', label: 'Hoàn thành' },
+                    EXPIRED: { color: 'red', label: 'Hết hạn' },
+                };
+                const config = statusConfig[processStatus] || { color: 'default', label: processStatus };
+                return <Tag color={config.color}>{config.label}</Tag>;
+            },
+        },
+        {
             title: 'Ghi chú',
             dataIndex: 'note',
             key: 'note',
+            width: '18%',
             ellipsis: true,
             render: (note) => note || <span style={{ color: '#999' }}>Không có ghi chú</span>,
         },
@@ -115,21 +183,20 @@ function ProductBatchTable({ refreshTrigger }) {
             title: 'Nhà cung cấp',
             dataIndex: 'providerId',
             key: 'providerId',
-            width: '10%',
+            width: '8%',
         },
         {
             title: 'Ngày tạo',
             dataIndex: 'createdAt',
             key: 'createdAt',
-            width: '15%',
+            width: '12%',
             render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '-',
             sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
         },
         {
             title: 'Thao tác',
             key: 'action',
-            fixed: 'right',
-            width: '10%',
+            width: '14%',
             render: (_, record) => (
                 <Space size="small">
                     <ViewButton onClick={() => handleView(record)} />
@@ -162,7 +229,6 @@ function ProductBatchTable({ refreshTrigger }) {
                     showTotal: (total) => `Tổng ${total} batch`,
                 }}
                 onChange={handleTableChange}
-                scroll={{ x: 1200 }}
             />
 
             <ProductBatchDetailModal
@@ -172,6 +238,16 @@ function ProductBatchTable({ refreshTrigger }) {
                     setDetailModalOpen(false);
                     setSelectedBatchId(null);
                 }}
+            />
+
+            <ProductBatchEditModal
+                batch={selectedBatch}
+                open={editModalOpen}
+                onClose={() => {
+                    setEditModalOpen(false);
+                    setSelectedBatch(null);
+                }}
+                onSuccess={handleEditSuccess}
             />
         </>
     );

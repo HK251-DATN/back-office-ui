@@ -6,28 +6,27 @@ import dayjs from 'dayjs';
 import ViewButton from '../../../components/ViewButton';
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
-import axios from 'axios';
-
-const UNIT_LABELS = {
-    KILOGRAM: 'Kg',
-    GRAM: 'g',
-    LITER: 'L',
-    MILLILITER: 'mL',
-};
+import axios from '../../../services/axiosInstance';
+import { API_URLS } from '../../../config/api';
 
 const STATUS_CONFIG = {
     STORED: { color: 'green', label: 'Đã lưu kho' },
     PROCESSING: { color: 'blue', label: 'Đang xử lý' },
     SOLD: { color: 'orange', label: 'Đã bán' },
     EXPIRED: { color: 'red', label: 'Hết hạn' },
+    PICKED: { color: 'cyan', label: 'Đã chọn' },
+    IN_TRANSIT: { color: 'geekblue', label: 'Đang vận chuyển' },
+    DELIVERED: { color: 'purple', label: 'Đã giao' },
+    RETURNED: { color: 'volcano', label: 'Đã trả lại' },
+    DISPOSED: { color: 'magenta', label: 'Đã hủy' },
 };
 
 function ProductDetailTable({ refreshTrigger }) {
-    const [data, setData] = useState([]);
+    const [groupedData, setGroupedData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
-        pageSize: 10,
+        pageSize: 9999,
         total: 0,
     });
     const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -35,25 +34,33 @@ function ProductDetailTable({ refreshTrigger }) {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pagination.current, pagination.pageSize, refreshTrigger]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const response = await axios.get('http://localhost:9200/api/product-detail?pageSize=9999', {
+            const response = await axios.get(`${API_URLS.STORAGE}/api/product-detail`, {
                 params: {
-                    page: pagination.current - 1,
-                    size: pagination.pageSize,
+                    pageNum: pagination.current,
+                    pageSize: pagination.pageSize,
                 },
             });
 
             if (response.data.type === 'GOOD') {
                 const details = response.data.detail;
-                setData(Array.isArray(details) ? details : []);
+                const detailsArray = Array.isArray(details) ? details : [];
+
+                // Group data by batchId and prodGenId
+                const grouped = groupProductDetails(detailsArray);
+                setGroupedData(grouped);
+
                 setPagination(prev => ({
                     ...prev,
-                    total: response.data.totalElements || details.length,
+                    total: response.data.totalElements || grouped.length,
                 }));
+            } else if (response.data.type === 'SKIP_AS_GOOD') {
+                setGroupedData([]);
             }
         } catch (error) {
             message.error('Không thể tải dữ liệu product detail');
@@ -63,110 +70,189 @@ function ProductDetailTable({ refreshTrigger }) {
         }
     };
 
+    const groupProductDetails = (details) => {
+        const groups = {};
+
+        details.forEach(item => {
+            const key = `${item.batchId}-${item.prodGenId}`;
+            if (!groups[key]) {
+                groups[key] = {
+                    key: key,
+                    batchId: item.batchId,
+                    prodGenId: item.prodGenId,
+                    count: 0,
+                    totalPrice: 0,
+                    avgPrice: 0,
+                    children: [],
+                    isGroup: true,
+                };
+            }
+            groups[key].count += 1;
+            groups[key].totalPrice += item.price || 0;
+            groups[key].children.push({
+                ...item,
+                key: `detail-${item.prodDetailId}`,
+                isGroup: false,
+            });
+        });
+
+        // Calculate average price for each group
+        return Object.values(groups).map(group => ({
+            ...group,
+            avgPrice: group.count > 0 ? group.totalPrice / group.count : 0,
+        }));
+    };
+
     const handleView = (record) => {
         setSelectedDetailId(record.prodDetailId);
         setDetailModalOpen(true);
     };
 
-    const handleEdit = (record) => {
+    const handleEdit = () => {
         message.info('Chức năng chỉnh sửa đang được phát triển');
     };
 
-    const handleDelete = (record) => {
+    const handleDelete = () => {
         message.info('Chức năng xóa đang được phát triển');
     };
 
     const columns = [
         {
-            title: 'ID',
-            dataIndex: 'prodDetailId',
-            key: 'prodDetailId',
-            width: '10%',
-            sorter: (a, b) => a.prodDetailId - b.prodDetailId,
-        },
-        {
             title: 'Batch ID',
             dataIndex: 'batchId',
             key: 'batchId',
             width: '10%',
+            render: (batchId, record) => {
+                if (record.isGroup) {
+                    return <strong>Batch #{batchId}</strong>;
+                }
+                return batchId;
+            },
         },
         {
             title: 'Product Gen ID',
             dataIndex: 'prodGenId',
             key: 'prodGenId',
-            width: '10%',
+            width: '12%',
+            render: (prodGenId, record) => {
+                if (record.isGroup) {
+                    return <strong>Product #{prodGenId}</strong>;
+                }
+                return prodGenId;
+            },
         },
         {
-            title: 'Số lượng',
-            dataIndex: 'unitQuantity',
-            key: 'unitQuantity',
-            width: '10%',
-            render: (quantity, record) => (
-                <span>
-                    {quantity} {UNIT_LABELS[record.unit] || record.unit}
-                </span>
-            ),
+            title: 'ID / Số lượng',
+            key: 'idOrCount',
+            width: '12%',
+            render: (_, record) => {
+                if (record.isGroup) {
+                    return (
+                        <Tag color="blue" style={{ fontSize: 14 }}>
+                            {record.count} sản phẩm
+                        </Tag>
+                    );
+                }
+                return `ID: ${record.prodDetailId}`;
+            },
         },
         {
             title: 'Giá',
-            dataIndex: 'price',
             key: 'price',
-            width: '10%',
-            render: (price) => (
-                <span>{price?.toLocaleString('vi-VN')} ₫</span>
-            ),
-            sorter: (a, b) => a.price - b.price,
+            width: '15%',
+            render: (_, record) => {
+                if (record.isGroup) {
+                    return (
+                        <div>
+                            <div>TB: {record.avgPrice?.toLocaleString('vi-VN')} ₫</div>
+                            <div style={{ fontSize: 11, color: '#999' }}>
+                                Tổng: {record.totalPrice?.toLocaleString('vi-VN')} ₫
+                            </div>
+                        </div>
+                    );
+                }
+                return <span>{record.price?.toLocaleString('vi-VN')} ₫</span>;
+            },
         },
         {
             title: 'Đánh giá',
             dataIndex: 'numOfStar',
             key: 'numOfStar',
             width: '10%',
-            render: (stars) => stars ? `${stars} ⭐` : '-',
+            render: (stars, record) => {
+                if (record.isGroup) return '-';
+                return stars ? `${stars} ⭐` : '-';
+            },
+        },
+        {
+            title: 'Storage Tool',
+            dataIndex: 'storageToolId',
+            key: 'storageToolId',
+            width: '11%',
+            render: (id, record) => {
+                if (record.isGroup) return '-';
+                return id || '-';
+            },
         },
         {
             title: 'Trạng thái',
             dataIndex: 'status',
             key: 'status',
-            width: '15%',
-            render: (status) => {
+            width: '12%',
+            render: (status, record) => {
+                if (record.isGroup) {
+                    // Count statuses in children
+                    const statusCounts = {};
+                    record.children.forEach(child => {
+                        statusCounts[child.status] = (statusCounts[child.status] || 0) + 1;
+                    });
+                    const mostCommon = Object.entries(statusCounts).sort((a, b) => b[1] - a[1])[0];
+                    if (!mostCommon) return '-';
+                    const config = STATUS_CONFIG[mostCommon[0]] || { color: 'default', label: mostCommon[0] };
+                    return <Tag color={config.color}>{config.label} ({mostCommon[1]})</Tag>;
+                }
                 const config = STATUS_CONFIG[status] || { color: 'default', label: status };
                 return <Tag color={config.color}>{config.label}</Tag>;
             },
-            filters: Object.keys(STATUS_CONFIG).map(key => ({
-                text: STATUS_CONFIG[key].label,
-                value: key,
-            })),
-            onFilter: (value, record) => record.status === value,
         },
         {
             title: 'Ngày tạo',
             dataIndex: 'createdAt',
             key: 'createdAt',
-            width: '15%',
-            render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '-',
-            sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+            width: '13%',
+            render: (date, record) => {
+                if (record.isGroup) {
+                    // Show earliest date from children
+                    const dates = record.children.map(c => c.createdAt).filter(Boolean);
+                    if (dates.length === 0) return '-';
+                    const earliest = dates.sort()[0];
+                    return dayjs(earliest).format('DD/MM/YYYY');
+                }
+                return date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '-';
+            },
         },
         {
             title: 'Thao tác',
             key: 'action',
-            fixed: 'right',
-            width: '10%',
-            render: (_, record) => (
-                <Space size="small">
-                    <ViewButton onClick={() => handleView(record)} />
-                    <EditButton onClick={() => handleEdit(record)} />
-                    <DeleteButton onClick={() => handleDelete(record)} />
-                </Space>
-            ),
+            width: '15%',
+            render: (_, record) => {
+                if (record.isGroup) return '-';
+                return (
+                    <Space size="small">
+                        <ViewButton onClick={() => handleView(record)} />
+                        <EditButton onClick={() => handleEdit(record)} />
+                        <DeleteButton onClick={() => handleDelete(record)} />
+                    </Space>
+                );
+            },
         },
     ];
 
-    const handleTableChange = (newPagination, filters) => {
+    const handleTableChange = (newPagination) => {
         setPagination({
-            ...pagination,
             current: newPagination.current,
             pageSize: newPagination.pageSize,
+            total: newPagination.total,
         });
     };
 
@@ -175,16 +261,22 @@ function ProductDetailTable({ refreshTrigger }) {
             <Table
                 className='border border-gray-200 rounded-2xl'
                 columns={columns}
-                dataSource={data}
+                dataSource={groupedData}
                 loading={loading}
-                rowKey="id"
+                rowKey="key"
+                expandable={{
+                    defaultExpandAllRows: false,
+                    indentSize: 30,
+                }}
                 pagination={{
-                    ...pagination,
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                    total: pagination.total,
                     showSizeChanger: true,
-                    showTotal: (total) => `Tổng ${total} sản phẩm`,
+                    showTotal: (total) => `Tổng ${total} nhóm sản phẩm`,
+                    pageSizeOptions: ['10', '20', '50'],
                 }}
                 onChange={handleTableChange}
-                scroll={{ x: 1400 }}
             />
 
             <ProductDetailDetailModal

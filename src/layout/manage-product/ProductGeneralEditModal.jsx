@@ -1,11 +1,19 @@
 // src/layout/manage-product/components/ProductGeneralEditModal.jsx
-import { Modal, Form, Input, Select, Tag, Button, message, Upload } from 'antd';
+import { Modal, Form, Input, InputNumber, Select, Tag, Button, message, Upload } from 'antd';
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import axiosInstance from '../../services/axiosInstance';
+import { API_URLS } from '../../config/api';
 
 const { TextArea } = Input;
-const BASE_URL = 'http://localhost:9100';
+const BASE_URL = API_URLS.MAIN;
+
+const UNIT_OPTIONS = [
+    { value: 'KILOGRAM', label: 'Kilogram (Kg)' },
+    { value: 'GRAM', label: 'Gram (g)' },
+    { value: 'LITER', label: 'Liter (L)' },
+    { value: 'MILLILITER', label: 'Milliliter (mL)' },
+];
 
 function ProductGeneralEditModal({ open, onClose, onSuccess, record }) {
     const [form] = Form.useForm();
@@ -30,6 +38,8 @@ function ProductGeneralEditModal({ open, onClose, onSuccess, record }) {
                 prodName: record.prodName,
                 description: record.description,
                 subSubcategoryId: record.subSubcategoryId,
+                unit: record.unit,
+                unitQuantity: record.unitQuantity,
             });
             setTags(record.tags || []);
             setImageFile(null);
@@ -92,13 +102,15 @@ function ProductGeneralEditModal({ open, onClose, onSuccess, record }) {
                 prodName: values.prodName,
                 description: values.description,
                 subSubcategoryId: values.subSubcategoryId,
+                unit: values.unit,
+                unitQuantity: values.unitQuantity,
                 tags: tags,
                 preorderPolicyId: null,
                 enterpriseStoreId: null,
             };
 
             // Step 1: Update product general fields
-            const updateResponse = await axios.put(
+            const updateResponse = await axiosInstance.put(
                 `${BASE_URL}/api/product-general/${record.prodGenId}`,
                 payload
             );
@@ -114,7 +126,7 @@ function ProductGeneralEditModal({ open, onClose, onSuccess, record }) {
                 try {
                     const formData = new FormData();
                     formData.append('file', imageFile);
-                    await axios.post(
+                    await axiosInstance.post(
                         `${BASE_URL}/api/product-general/${record.prodGenId}/upload-img`,
                         formData,
                         { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -206,6 +218,33 @@ function ProductGeneralEditModal({ open, onClose, onSuccess, record }) {
                         maxLength={1000}
                     />
                 </Form.Item>
+
+                {/* Unit and Unit Quantity */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <Form.Item
+                        label="Đơn vị"
+                        name="unit"
+                        rules={[{ required: true, message: 'Vui lòng chọn đơn vị!' }]}
+                    >
+                        <Select placeholder="Chọn đơn vị" options={UNIT_OPTIONS} />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Số lượng đơn vị"
+                        name="unitQuantity"
+                        rules={[
+                            { required: true, message: 'Vui lòng nhập số lượng!' },
+                            { type: 'number', min: 0.01, message: 'Số lượng phải lớn hơn 0!' },
+                        ]}
+                    >
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            placeholder="Ví dụ: 500"
+                            min={0}
+                            step={0.01}
+                        />
+                    </Form.Item>
+                </div>
 
                 {/* Tags */}
                 <Form.Item label="Tags">

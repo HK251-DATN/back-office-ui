@@ -8,7 +8,7 @@ const Base = () => {
     return (
         <div className="w-full h-full flex flex-row overflow-hidden">
             <Sidebar className="sticky top-0 left-0"></Sidebar>
-            <div className="w-full h-full flex flex-col">
+            <div className="w-7/8 h-full flex flex-col grow-0 shrink-0">
                 <Header></Header>
                 <div className="w-full h-full overflow-scroll">
                     <Outlet></Outlet>

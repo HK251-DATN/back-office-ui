@@ -1,7 +1,8 @@
 // src/components/warehouse/ProductBatchCreateModal.jsx
-import { Modal, Form, Input, InputNumber, Select, Button, message } from 'antd';
+import { Modal, Form, Input, InputNumber, Select, Button, message, DatePicker } from 'antd';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { createProductBatch } from '../../../services/productBatchService';
+import { getSubSubcategories } from '../../../services/categoryService';
 
 const { TextArea } = Input;
 
@@ -12,45 +13,67 @@ const UNIT_OPTIONS = [
     { value: 'MILLILITER', label: 'Milliliter (mL)' },
 ];
 
+const PROCESS_STATUS_OPTIONS = [
+    { value: 'PENDING', label: 'Chờ xử lý' },
+    { value: 'COMPLETED', label: 'Hoàn thành' },
+    { value: 'EXPIRED', label: 'Hết hạn' },
+];
+
 function ProductBatchCreateModal({ open, onClose, onSuccess }) {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [providers, setProviders] = useState([]);
+    const [subSubcategories, setSubSubcategories] = useState([]);
 
     useEffect(() => {
+        const fetchProviders = async () => {
+            try {
+                // Mock providers for now - replace with actual endpoint when available
+                setProviders([
+                    { id: 1, name: 'Nhà cung cấp A' },
+                    { id: 2, name: 'Nhà cung cấp B' },
+                    { id: 3, name: 'Nhà cung cấp C' },
+                ]);
+            } catch (error) {
+                console.error('Failed to fetch providers:', error);
+            }
+        };
+
+        const fetchSubSubcategories = async () => {
+            try {
+                const response = await getSubSubcategories();
+                if (response.data.type === 'GOOD') {
+                    setSubSubcategories(response.data.detail);
+                }
+            } catch (error) {
+                console.error('Failed to fetch sub-subcategories:', error);
+                message.error('Không thể tải danh mục sản phẩm');
+            }
+        };
+
         if (open) {
             fetchProviders();
+            fetchSubSubcategories();
             form.resetFields();
         }
     }, [open, form]);
-
-    const fetchProviders = async () => {
-        try {
-            // Replace with your actual provider endpoint
-            const response = await axios.get('/api/providers');
-            if (response.data.type === 'GOOD') {
-                setProviders(response.data.detail);
-            } else {
-                setProviders([
-                    { id: '1', name: 'Nhà cung cấp A' },
-                    { id: '2', name: 'Nhà cung cấp B' },
-                ]);
-            }
-        } catch (error) {
-            console.error('Failed to fetch providers:', error);
-            // Mock providers if API fails
-            setProviders([
-                { id: '1', name: 'Nhà cung cấp A' },
-                { id: '2', name: 'Nhà cung cấp B' },
-            ]);
-        }
-    };
 
     const handleFinish = async (values) => {
         setLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:9200/api/product-batch', values);
+            const payload = {
+                quantity: values.quantity,
+                unit: values.unit,
+                note: values.note || '',
+                receivedAt: values.receivedAt.format('YYYY-MM-DDTHH:mm:ss'),
+                expiredAt: values.expiredAt.format('YYYY-MM-DDTHH:mm:ss'),
+                providerId: values.providerId,
+                subSubcategoryId: values.subSubcategoryId,
+                processStatus: values.processStatus,
+            };
+
+            const response = await createProductBatch(payload);
 
             if (response.data.type === 'GOOD') {
                 message.success('Tạo product batch thành công!');
@@ -83,49 +106,117 @@ function ProductBatchCreateModal({ open, onClose, onSuccess }) {
                 autoComplete="off"
             >
                 <Form.Item
-                    label="Số lượng"
-                    name="quantity"
-                    rules={[
-                        { required: true, message: 'Vui lòng nhập số lượng!' },
-                        { type: 'number', min: 0.01, message: 'Số lượng phải lớn hơn 0!' },
-                    ]}
+                    label="Danh mục sản phẩm"
+                    name="subSubcategoryId"
+                    rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
                 >
-                    <InputNumber
-                        style={{ width: '100%' }}
-                        placeholder="Nhập số lượng"
-                        min={0}
-                        step={0.01}
+                    <Select
+                        placeholder="Chọn danh mục sản phẩm"
+                        showSearch
+                        optionFilterProp="label"
+                        options={subSubcategories.map((cat) => ({
+                            value: cat.subSubcategoryId,
+                            label: cat.name,
+                        }))}
                     />
                 </Form.Item>
 
-                <Form.Item
-                    label="Đơn vị"
-                    name="unit"
-                    rules={[{ required: true, message: 'Vui lòng chọn đơn vị!' }]}
-                >
-                    <Select placeholder="Chọn đơn vị" options={UNIT_OPTIONS} />
-                </Form.Item>
-
-                <Form.Item
-                    label="Nhà cung cấp"
-                    name="providerId"
-                    rules={[{ required: true, message: 'Vui lòng chọn nhà cung cấp!' }]}
-                >
-                    <Select
-                        placeholder="Chọn nhà cung cấp"
-                        showSearch
-                        optionFilterProp="children"
-                        filterOption={(input, option) =>
-                            option.children.toLowerCase().includes(input.toLowerCase())
-                        }
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <Form.Item
+                        label="Số lượng"
+                        name="quantity"
+                        rules={[
+                            { required: true, message: 'Vui lòng nhập số lượng!' },
+                            { type: 'number', min: 0.01, message: 'Số lượng phải lớn hơn 0!' },
+                        ]}
                     >
-                        {providers.map(provider => (
-                            <Select.Option key={provider.id} value={provider.id}>
-                                {provider.name || `Provider ${provider.id}`}
-                            </Select.Option>
-                        ))}
-                    </Select>
-                </Form.Item>
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            placeholder="Nhập số lượng"
+                            min={0}
+                            step={0.01}
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Đơn vị"
+                        name="unit"
+                        rules={[{ required: true, message: 'Vui lòng chọn đơn vị!' }]}
+                    >
+                        <Select placeholder="Chọn đơn vị" options={UNIT_OPTIONS} />
+                    </Form.Item>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <Form.Item
+                        label="Nhà cung cấp"
+                        name="providerId"
+                        rules={[{ required: true, message: 'Vui lòng chọn nhà cung cấp!' }]}
+                    >
+                        <Select
+                            placeholder="Chọn nhà cung cấp"
+                            showSearch
+                            optionFilterProp="children"
+                            filterOption={(input, option) =>
+                                option.children.toLowerCase().includes(input.toLowerCase())
+                            }
+                        >
+                            {providers.map(provider => (
+                                <Select.Option key={provider.id} value={provider.id}>
+                                    {provider.name || `Provider ${provider.id}`}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Trạng thái xử lý"
+                        name="processStatus"
+                        rules={[{ required: true, message: 'Vui lòng chọn trạng thái!' }]}
+                        initialValue="PENDING"
+                    >
+                        <Select placeholder="Chọn trạng thái" options={PROCESS_STATUS_OPTIONS} />
+                    </Form.Item>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <Form.Item
+                        label="Ngày nhận hàng"
+                        name="receivedAt"
+                        rules={[{ required: true, message: 'Vui lòng chọn ngày nhận!' }]}
+                    >
+                        <DatePicker
+                            showTime
+                            format="DD/MM/YYYY HH:mm"
+                            placeholder="Chọn ngày nhận"
+                            style={{ width: '100%' }}
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Ngày hết hạn"
+                        name="expiredAt"
+                        rules={[
+                            { required: true, message: 'Vui lòng chọn ngày hết hạn!' },
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    const receivedAt = getFieldValue('receivedAt');
+                                    if (!value || !receivedAt || value.isAfter(receivedAt)) {
+                                        return Promise.resolve();
+                                    }
+                                    return Promise.reject(new Error('Ngày hết hạn phải sau ngày nhận hàng!'));
+                                },
+                            }),
+                        ]}
+                    >
+                        <DatePicker
+                            showTime
+                            format="DD/MM/YYYY HH:mm"
+                            placeholder="Chọn ngày hết hạn"
+                            style={{ width: '100%' }}
+                        />
+                    </Form.Item>
+                </div>
 
                 <Form.Item
                     label="Ghi chú"

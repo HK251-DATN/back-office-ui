@@ -4,13 +4,22 @@ import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-de
 import { useState, useEffect } from 'react';
 import ProductDetailModal from './ProductDetailModal';
 import axios from '../../../services/axiosInstance';
+import { API_URLS } from '../../../config/api';
 import ProductGeneralCreateModal from './ProductGeneralCreateModal';
 import ProductGeneralEditModal from '../ProductGeneralEditModal';
+
+const UNIT_LABELS = {
+    KILOGRAM: 'Kg',
+    GRAM: 'g',
+    LITER: 'L',
+    MILLILITER: 'mL',
+};
 
 function ProductGeneralTable() {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [subSubcategories, setSubSubcategories] = useState([]);
 
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState(null);
@@ -33,13 +42,30 @@ function ProductGeneralTable() {
 
     useEffect(() => {
         fetchProductGenerals();
+        fetchSubSubcategories();
     }, []);
+
+    const fetchSubSubcategories = async () => {
+        try {
+            const response = await axios.get(`${API_URLS.MAIN}/api/categories/sub-subcategories`);
+            if (response.data.type === 'GOOD') {
+                setSubSubcategories(response.data.detail);
+            }
+        } catch (err) {
+            console.error('Failed to fetch sub-subcategories:', err);
+        }
+    };
+
+    const getSubSubcategoryName = (id) => {
+        const category = subSubcategories.find(cat => cat.subSubcategoryId === id);
+        return category ? category.name : '';
+    };
 
     const fetchProductGenerals = async () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get('http://localhost:9100/api/product-general');
+            const response = await axios.get(`${API_URLS.MAIN}/api/product-general`);
             if (response.data.type === 'GOOD') {
                 setData(response.data.detail);
             } else {
@@ -60,7 +86,7 @@ function ProductGeneralTable() {
 
     const handleDelete = async (record) => {
         try {
-            const response = await axios.delete(`http://localhost:9100/api/product-general/${record.prodGenId}`);
+            const response = await axios.delete(`${API_URLS.MAIN}/api/product-general/${record.prodGenId}`);
             if (response.data.type === 'GOOD') {
                 message.success('Xóa sản phẩm thành công!');
                 fetchProductGenerals();
@@ -122,10 +148,30 @@ function ProductGeneralTable() {
             sorter: (a, b) => a.prodName.localeCompare(b.prodName),
         },
         {
+            title: 'Đơn vị',
+            dataIndex: 'unit',
+            key: 'unit',
+            width: 80,
+            render: (unit) => (
+                <Tag color="blue">{UNIT_LABELS[unit] || unit}</Tag>
+            ),
+        },
+        {
+            title: 'Số lượng',
+            dataIndex: 'unitQuantity',
+            key: 'unitQuantity',
+            width: 90,
+            render: (quantity, record) => (
+                <span>
+                    {quantity} {UNIT_LABELS[record.unit] || record.unit}
+                </span>
+            ),
+        },
+        {
             title: 'Mô tả',
             dataIndex: 'description',
             key: 'description',
-            width: 280,
+            width: 220,
             ellipsis: true,
             render: (text) => (
                 <span style={{ color: '#666' }}>
@@ -137,8 +183,12 @@ function ProductGeneralTable() {
             title: 'Danh mục con',
             dataIndex: 'subSubcategoryId',
             key: 'subSubcategoryId',
-            width: 120,
-            render: (id) => <Tag color="blue">#{id}</Tag>,
+            width: 180,
+            ellipsis: true,
+            render: (id) => {
+                const name = getSubSubcategoryName(id);
+                return name ? `${id}-${name}` : `#${id}`;
+            },
         },
         {
             title: 'Tags',

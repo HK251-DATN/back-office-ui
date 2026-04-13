@@ -1,11 +1,19 @@
 // src/layout/manage-product/components/ProductGeneralCreateModal.jsx
-import { Modal, Form, Input, Select, Tag, Button, message, Upload } from 'antd';
+import { Modal, Form, Input, InputNumber, Select, Tag, Button, message, Upload } from 'antd';
 import { PlusOutlined, UploadOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import axios from '../../../services/axiosInstance';
+import { API_URLS } from '../../../config/api';
 
 const { TextArea } = Input;
-const BASE_URL = 'http://localhost:9100';
+const BASE_URL = API_URLS.MAIN;
+
+const UNIT_OPTIONS = [
+    { value: 'KILOGRAM', label: 'Kilogram (Kg)' },
+    { value: 'GRAM', label: 'Gram (g)' },
+    { value: 'LITER', label: 'Liter (L)' },
+    { value: 'MILLILITER', label: 'Milliliter (mL)' },
+];
 
 function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
     const [form] = Form.useForm();
@@ -87,6 +95,8 @@ function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
                 prodName: values.prodName,
                 description: values.description,
                 subSubcategoryId: values.subSubcategoryId,
+                unit: values.unit,
+                unitQuantity: values.unitQuantity,
                 imgUrl: null,
                 preorderPolicyId: null,
                 enterpriseStoreId: null,
@@ -197,6 +207,33 @@ function ProductGeneralCreateModal({ open, onClose, onSuccess }) {
                         maxLength={1000}
                     />
                 </Form.Item>
+
+                {/* Unit and Unit Quantity */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <Form.Item
+                        label="Đơn vị"
+                        name="unit"
+                        rules={[{ required: true, message: 'Vui lòng chọn đơn vị!' }]}
+                    >
+                        <Select placeholder="Chọn đơn vị" options={UNIT_OPTIONS} />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Số lượng đơn vị"
+                        name="unitQuantity"
+                        rules={[
+                            { required: true, message: 'Vui lòng nhập số lượng!' },
+                            { type: 'number', min: 0.01, message: 'Số lượng phải lớn hơn 0!' },
+                        ]}
+                    >
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            placeholder="Ví dụ: 500"
+                            min={0}
+                            step={0.01}
+                        />
+                    </Form.Item>
+                </div>
 
                 {/* Tags */}
                 <Form.Item label="Tags">

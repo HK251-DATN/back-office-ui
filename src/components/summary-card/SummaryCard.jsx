@@ -6,9 +6,13 @@ const variantStyles = {
     info: "text-blue-600"
 }
 
-const SummaryCard = ({ title, content, subContent, variant = "default" }) => {
+const SummaryCard = ({ title, content, subContent, variant = "default", onClick }) => {
     return (
-        <div className="flex flex-col justify-between bg-white rounded-xl border border-gray-200 p-4 w-full h-28 shadow-sm">
+        <div
+            className={`flex flex-col justify-between bg-white rounded-xl border border-gray-200 p-4 w-full h-28 shadow-sm ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
+                }`}
+            onClick={onClick}
+        >
 
             <p className="text-sm text-gray-500">
                 {title}

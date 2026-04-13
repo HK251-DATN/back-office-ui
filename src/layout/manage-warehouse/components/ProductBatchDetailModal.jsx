@@ -2,7 +2,7 @@
 import { Modal, Descriptions, Spin, Alert, Tag } from 'antd';
 import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
-import axios from 'axios';
+import { getProductBatchById } from '../../../services/productBatchService';
 
 const UNIT_LABELS = {
     KILOGRAM: 'Kilogram (Kg)',
@@ -11,36 +11,51 @@ const UNIT_LABELS = {
     MILLILITER: 'Milliliter (mL)',
 };
 
+const PROCESS_STATUS_LABELS = {
+    PENDING: 'Chờ xử lý',
+    COMPLETED: 'Hoàn thành',
+    EXPIRED: 'Hết hạn',
+};
+
+const PROCESS_STATUS_COLORS = {
+    PENDING: 'orange',
+    PROCESSING: 'blue',
+    COMPLETED: 'green',
+    EXPIRED: 'red',
+};
+
 function ProductBatchDetailModal({ batchId, open, onClose }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [data, setData] = useState(null);
 
     useEffect(() => {
+        const fetchBatchDetail = async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const response = await getProductBatchById(batchId);
+
+                if (response.data.type === 'GOOD') {
+                    console.log(response.data.detail);
+
+                    setData(response.data.detail);
+                } else {
+                    setError(response.data.message || 'Không thể tải thông tin batch');
+                }
+            } catch (error) {
+                setError(error.response?.data?.message || 'Có lỗi xảy ra khi tải dữ liệu');
+                console.error('Fetch error:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (open && batchId) {
             fetchBatchDetail();
         }
     }, [open, batchId]);
-
-    const fetchBatchDetail = async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const response = await axios.get(`http://localhost:9200/api/product-batch/${batchId}`);
-
-            if (response.data.type === 'GOOD') {
-                setData(response.data.detail);
-            } else {
-                setError(response.data.message || 'Không thể tải thông tin batch');
-            }
-        } catch (error) {
-            setError(error.response?.data?.message || 'Có lỗi xảy ra khi tải dữ liệu');
-            console.error('Fetch error:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     return (
         <Modal
@@ -70,7 +85,7 @@ function ProductBatchDetailModal({ batchId, open, onClose }) {
             {!loading && !error && data && (
                 <Descriptions bordered column={1}>
                     <Descriptions.Item label="ID">
-                        <strong>{data.id}</strong>
+                        <strong>{data.batchId}</strong>
                     </Descriptions.Item>
 
                     <Descriptions.Item label="Số lượng">
@@ -79,6 +94,16 @@ function ProductBatchDetailModal({ batchId, open, onClose }) {
 
                     <Descriptions.Item label="Đơn vị">
                         <Tag color="blue">{UNIT_LABELS[data.unit] || data.unit}</Tag>
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Trạng thái xử lý">
+                        {data.processStatus ? (
+                            <Tag color={PROCESS_STATUS_COLORS[data.processStatus] || 'default'}>
+                                {PROCESS_STATUS_LABELS[data.processStatus] || data.processStatus}
+                            </Tag>
+                        ) : (
+                            <Tag>Chưa xác định</Tag>
+                        )}
                     </Descriptions.Item>
 
                     <Descriptions.Item label="Nhà cung cấp">

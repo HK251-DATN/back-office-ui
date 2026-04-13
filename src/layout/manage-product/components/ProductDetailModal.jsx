@@ -2,8 +2,9 @@
 import { Modal, Spin, Tag, Image, Descriptions, Alert } from 'antd';
 import { useState, useEffect } from 'react';
 import axios from '../../../services/axiosInstance';
+import { API_URLS } from '../../../config/api';
 
-const BASE_URL = 'http://localhost:9100';
+const BASE_URL = API_URLS.MAIN;
 
 function ProductDetailModal({ productId, open, onClose }) {
     const [loading, setLoading] = useState(false);
