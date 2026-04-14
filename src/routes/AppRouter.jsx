@@ -12,6 +12,8 @@ import ManageProduct from "../layout/manage-product/ManageProduct";
 import ManageSaleEvent from "../layout/manage-sale-event/ManageSaleEvent";
 import ManageCategory from "../layout/manage-category/ManageCategory";
 import ManageOrder from "../layout/manage-order/ManageOrder";
+import PackagingEmployee from "../layout/packaging-employee/PackagingEmployee";
+import DeliveryEmployee from "../layout/delivery-employee/DeliveryEmployee";
 import Login from "../layout/login/Login";
 import UnauthorizedPage from "../layout/pages/UnauthorizedPage";
 import ProtectedRoute from "./ProtectedRoute";
@@ -99,6 +101,16 @@ const AppRouter = () => {
                 <Route path="system-setting" element={
                     <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <SystemSetting></SystemSetting>
+                    </ProtectedRoute>
+                } />
+                <Route path="packaging/employee" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "EMPLOYEE"]}>
+                        <PackagingEmployee></PackagingEmployee>
+                    </ProtectedRoute>
+                } />
+                <Route path="delivery/employee" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "EMPLOYEE"]}>
+                        <DeliveryEmployee></DeliveryEmployee>
                     </ProtectedRoute>
                 } />
             </Route>

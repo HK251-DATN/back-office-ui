@@ -11,6 +11,8 @@ import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import LoyaltyOutlinedIcon from '@mui/icons-material/LoyaltyOutlined';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
+import DeliveryDiningOutlinedIcon from '@mui/icons-material/DeliveryDiningOutlined';
 import SidebarItem from "./sidebar-item/SidebarItem";
 
 const Sidebar = ({ className = "" }) => {
@@ -52,6 +54,16 @@ const Sidebar = ({ className = "" }) => {
                     icon={<Inventory2OutlinedIcon />}
                     name={"Đóng gói"}
                     link={"/manage-packaging"}
+                />
+                <SidebarItem
+                    icon={<AssignmentIndOutlinedIcon />}
+                    name={"Nhiệm vụ đóng gói"}
+                    link={"/packaging/employee"}
+                />
+                <SidebarItem
+                    icon={<DeliveryDiningOutlinedIcon />}
+                    name={"Nhiệm vụ giao hàng"}
+                    link={"/delivery/employee"}
                 />
                 <SidebarItem
                     icon={<LocalShippingOutlinedIcon />}
