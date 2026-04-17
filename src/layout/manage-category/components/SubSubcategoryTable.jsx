@@ -100,9 +100,19 @@ function SubSubcategoryTable() {
             title: 'Mô tả',
             dataIndex: 'description',
             key: 'description',
-            width: '32%',
+            width: '25%',
             ellipsis: true,
             render: (text) => <span style={{ color: '#666' }}>{text}</span>,
+        },
+        {
+            title: 'Số ngày lưu kho TB',
+            dataIndex: 'avgShelfDays',
+            key: 'avgShelfDays',
+            width: '10%',
+            sorter: (a, b) => (a.avgShelfDays || 0) - (b.avgShelfDays || 0),
+            render: (days) => (
+                <Tag color="cyan">{days ? `${days} ngày` : 'N/A'}</Tag>
+            ),
         },
         {
             title: 'ID danh mục con',

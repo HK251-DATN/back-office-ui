@@ -24,6 +24,7 @@ function ProductBatchCreateModal({ open, onClose, onSuccess }) {
     const [loading, setLoading] = useState(false);
     const [providers, setProviders] = useState([]);
     const [subSubcategories, setSubSubcategories] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState(null);
 
     useEffect(() => {
         const fetchProviders = async () => {
@@ -55,8 +56,31 @@ function ProductBatchCreateModal({ open, onClose, onSuccess }) {
             fetchProviders();
             fetchSubSubcategories();
             form.resetFields();
+            setSelectedCategory(null);
         }
     }, [open, form]);
+
+    const handleCategoryChange = (categoryId) => {
+        const category = subSubcategories.find(cat => cat.subSubcategoryId === categoryId);
+        setSelectedCategory(category);
+
+        // Auto-calculate expiredAt based on avgShelfDays
+        if (category?.avgShelfDays) {
+            const receivedAt = form.getFieldValue('receivedAt');
+            if (receivedAt) {
+                const expiredAt = receivedAt.clone().add(category.avgShelfDays, 'days');
+                form.setFieldValue('expiredAt', expiredAt);
+            }
+        }
+    };
+
+    const handleReceivedAtChange = (date) => {
+        // Auto-calculate expiredAt when receivedAt changes
+        if (date && selectedCategory?.avgShelfDays) {
+            const expiredAt = date.clone().add(selectedCategory.avgShelfDays, 'days');
+            form.setFieldValue('expiredAt', expiredAt);
+        }
+    };
 
     const handleFinish = async (values) => {
         setLoading(true);
@@ -109,11 +133,17 @@ function ProductBatchCreateModal({ open, onClose, onSuccess }) {
                     label="Danh mục sản phẩm"
                     name="subSubcategoryId"
                     rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
+                    extra={selectedCategory?.avgShelfDays ? (
+                        <span style={{ color: '#1890ff' }}>
+                            ℹ️ Số ngày lưu kho trung bình: <strong>{selectedCategory.avgShelfDays} ngày</strong>
+                        </span>
+                    ) : null}
                 >
                     <Select
                         placeholder="Chọn danh mục sản phẩm"
                         showSearch
                         optionFilterProp="label"
+                        onChange={handleCategoryChange}
                         options={subSubcategories.map((cat) => ({
                             value: cat.subSubcategoryId,
                             label: cat.name,
@@ -190,6 +220,7 @@ function ProductBatchCreateModal({ open, onClose, onSuccess }) {
                             format="DD/MM/YYYY HH:mm"
                             placeholder="Chọn ngày nhận"
                             style={{ width: '100%' }}
+                            onChange={handleReceivedAtChange}
                         />
                     </Form.Item>
 
@@ -208,6 +239,11 @@ function ProductBatchCreateModal({ open, onClose, onSuccess }) {
                                 },
                             }),
                         ]}
+                        extra={selectedCategory?.avgShelfDays ? (
+                            <span style={{ color: '#52c41a' }}>
+                                ✓ Tự động tính dựa trên {selectedCategory.avgShelfDays} ngày lưu kho
+                            </span>
+                        ) : null}
                     >
                         <DatePicker
                             showTime

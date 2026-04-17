@@ -1,5 +1,5 @@
 // src/layout/manage-category/components/SubSubcategoryFormModal.jsx
-import { Modal, Form, Input, Select, Button, message, Upload } from 'antd';
+import { Modal, Form, Input, InputNumber, Select, Button, message, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import {
@@ -34,6 +34,7 @@ function SubSubcategoryFormModal({ open, onClose, onSuccess, record, mainCategor
                 name: record.name,
                 description: record.description,
                 subcategoryId: record.subcategoryId,
+                avgShelfDays: record.avgShelfDays,
             });
             setImageFile(null);
             setImagePreview(record.iconUrl || null);
@@ -117,6 +118,9 @@ function SubSubcategoryFormModal({ open, onClose, onSuccess, record, mainCategor
         try {
             const payload = { subcategoryId: values.subcategoryId, name: values.name };
             if (values.description) payload.description = values.description;
+            if (values.avgShelfDays !== undefined && values.avgShelfDays !== null) {
+                payload.avgShelfDays = values.avgShelfDays;
+            }
 
             let subSubcategoryId;
 
@@ -211,6 +215,23 @@ function SubSubcategoryFormModal({ open, onClose, onSuccess, record, mainCategor
 
                 <Form.Item label="Mô tả" name="description">
                     <Input.TextArea rows={3} placeholder="Mô tả ngắn..." />
+                </Form.Item>
+
+                <Form.Item
+                    label="Số ngày lưu kho trung bình"
+                    name="avgShelfDays"
+                    rules={[
+                        { required: true, message: 'Vui lòng nhập số ngày lưu kho!' },
+                        { type: 'number', min: 1, message: 'Số ngày phải lớn hơn 0!' },
+                    ]}
+                    extra="Số ngày sản phẩm thường được lưu trong kho"
+                >
+                    <InputNumber
+                        style={{ width: '100%' }}
+                        placeholder="Ví dụ: 7 (ngày)"
+                        min={1}
+                        precision={0}
+                    />
                 </Form.Item>
 
                 <Form.Item label="Icon danh mục">
