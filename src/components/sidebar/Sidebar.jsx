@@ -14,6 +14,7 @@ import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
 import DeliveryDiningOutlinedIcon from '@mui/icons-material/DeliveryDiningOutlined';
+import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
 import SidebarItem from "./sidebar-item/SidebarItem";
 
 const Sidebar = ({ className = "" }) => {
@@ -80,6 +81,11 @@ const Sidebar = ({ className = "" }) => {
                     icon={<WarehouseOutlinedIcon />}
                     name={"Quản lý kho"}
                     link={"/manage-warehouse"}
+                />
+                <SidebarItem
+                    icon={<RequestQuoteOutlinedIcon />}
+                    name={"Yêu cầu nguyên liệu"}
+                    link={"/manage-raw-product-demand"}
                 />
                 <SidebarItem
                     icon={<ArticleOutlinedIcon />}

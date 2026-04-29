@@ -1,10 +1,11 @@
 // src/components/warehouse/ProductDetailCreateModal.jsx
-import { Modal, Form, InputNumber, Select, Button, message, Alert, Divider } from 'antd';
+import { Modal, Form, InputNumber, Select, Button, message, Alert, Divider, Tag } from 'antd';
 import axios from '../../../services/axiosInstance';
 import { API_URLS } from '../../../config/api';
 import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import axiosInstance from '../../../services/axiosInstance';
+import { getSubBatchesByBatchId } from '../../../services/productBatchService';
 
 const STATUS_OPTIONS = [
     { value: 'STORED', label: 'Đã lưu kho' },
@@ -34,6 +35,13 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
     const [storageTools, setStorageTools] = useState([]);
     const [calculationPreview, setCalculationPreview] = useState('');
 
+    // New state for V2 improvements
+    const [verificationType, setVerificationType] = useState(null);
+    const [providerId, setProviderId] = useState(null);
+    const [subBatches, setSubBatches] = useState([]);
+    const [processingResult, setProcessingResult] = useState(null);
+    const [loadingSubBatches, setLoadingSubBatches] = useState(false);
+
     useEffect(() => {
         if (open) {
             fetchBatches();
@@ -44,6 +52,10 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
             setSuitableProducts([]);
             setSelectedProduct(null);
             setCalculationPreview('');
+            setVerificationType(null);
+            setProviderId(null);
+            setSubBatches([]);
+            setProcessingResult(null);
         }
     }, [open, form]);
 
@@ -71,7 +83,11 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
         try {
             const response = await axios.get(`${API_URLS.STORAGE}/api/product-batch?pageNum=1&pageSize=100`);
             if (response.data.type === 'GOOD') {
-                setBatches(response.data.detail || []);
+                // Filter only PENDING batches (not yet processed)
+                const pendingBatches = (response.data.detail || []).filter(
+                    batch => batch.processStatus === 'PENDING'
+                );
+                setBatches(pendingBatches);
             } else if (response.data.type === 'SKIP_AS_GOOD') {
                 setBatches([]);
             }
@@ -102,7 +118,32 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
         setSuitableProducts([]);
         setSelectedProduct(null);
         setCalculationPreview('');
+        setProcessingResult(null);
         form.setFieldValue('prodGenId', undefined);
+
+        // Set verification type and provider info
+        setVerificationType(batch?.verificationType || null);
+        setProviderId(batch?.providerId || null);
+
+        // If VIDEO batch, fetch sub-batches
+        if (batch?.verificationType === 'VIDEO') {
+            setLoadingSubBatches(true);
+            try {
+                const subBatchResponse = await getSubBatchesByBatchId(batchId);
+                if (subBatchResponse.data.type === 'GOOD' || subBatchResponse.data.type === 'SKIP_AS_GOOD') {
+                    setSubBatches(subBatchResponse.data.detail || []);
+                } else {
+                    setSubBatches([]);
+                }
+            } catch (error) {
+                console.error('Failed to fetch sub-batches:', error);
+                setSubBatches([]);
+            } finally {
+                setLoadingSubBatches(false);
+            }
+        } else {
+            setSubBatches([]);
+        }
 
         if (!batchId) return;
 
@@ -156,27 +197,73 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
         setLoading(true);
 
         try {
+            // Use V2 endpoint with simpler payload
             const payload = {
-                status: values.status,
-                price: values.price,
-                numOfStar: values.numOfStar || 0,
-                storageToolId: values.storageToolId,
                 batchId: values.batchId,
-                prodGenId: values.prodGenId,
+                productGeneralId: values.prodGenId,
+                price: values.price,
+                storageToolId: values.storageToolId,
+                numOfStar: values.numOfStar || 0,
             };
 
-            const response = await axios.post(`${API_URLS.STORAGE}/api/product-detail/process-batch`, payload);
+            const response = await axios.post(`${API_URLS.STORAGE}/api/product-detail/process-batch-v2`, payload);
 
-            if (response.data.type === 'GOOD') {
-                const createdCount = Array.isArray(response.data.detail) ? response.data.detail.length : 0;
-                message.success(`Xử lý batch thành công! Đã tạo ${createdCount} sản phẩm.`);
-                form.resetFields();
-                setSelectedBatch(null);
-                setSuitableProducts([]);
-                setSelectedProduct(null);
-                setCalculationPreview('');
+            if (response.data.type === 'GOOD' || response.data.type === 'SKIP_AS_GOOD') {
+                const result = response.data.detail;
+                setProcessingResult(result);
+
+                // Show detailed success message
+                if (result.verificationType === 'CERTIFICATE') {
+                    message.success({
+                        content: (
+                            <div>
+                                <div><strong>Xử lý batch thành công!</strong></div>
+                                <div>Loại: Chứng nhận (Provider #{result.providerId})</div>
+                                <div>Đã tạo: {result.totalProductDetailsCreated} sản phẩm</div>
+                            </div>
+                        ),
+                        duration: 5,
+                    });
+                } else {
+                    // VIDEO batch
+                    const breakdown = result.subBatchBreakdowns
+                        ?.map(sb => `Provider #${sb.providerId}: ${sb.productDetailsCreated} sản phẩm`)
+                        .join(', ') || '';
+
+                    message.success({
+                        content: (
+                            <div>
+                                <div><strong>Xử lý batch thành công!</strong></div>
+                                <div>Loại: Video (Gộp chung)</div>
+                                <div>Tổng: {result.totalProductDetailsCreated} sản phẩm</div>
+                                {breakdown && (
+                                    <div style={{ fontSize: '12px', marginTop: 4 }}>
+                                        Chi tiết: {breakdown}
+                                    </div>
+                                )}
+                            </div>
+                        ),
+                        duration: 8,
+                    });
+                }
+
+                // Don't close modal immediately - show result first
                 onSuccess?.();
-                onClose();
+
+                // Reset after 2 seconds to show results
+                setTimeout(() => {
+                    form.resetFields();
+                    setSelectedBatch(null);
+                    setSuitableProducts([]);
+                    setSelectedProduct(null);
+                    setCalculationPreview('');
+                    setVerificationType(null);
+                    setProviderId(null);
+                    setSubBatches([]);
+                    setProcessingResult(null);
+                    onClose();
+                }, 2000);
+
             } else {
                 message.error(response.data.message || 'Xử lý batch thất bại!');
             }
@@ -236,6 +323,64 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
                     />
                 )}
 
+                {/* Verification Type Badge */}
+                {selectedBatch && verificationType && (
+                    <Alert
+                        message={
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {verificationType === 'CERTIFICATE' ? (
+                                    <>
+                                        <Tag color="green">✓ Chứng nhận</Tag>
+                                        <span>
+                                            Batch này từ nhà cung cấp đã được chứng nhận
+                                            {providerId && ` (Provider #${providerId})`}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Tag color="blue">📹 Video</Tag>
+                                        <span>
+                                            Batch gộp từ nhiều nhà cung cấp ({subBatches.length} sub-batches)
+                                        </span>
+                                    </>
+                                )}
+                            </div>
+                        }
+                        type={verificationType === 'CERTIFICATE' ? 'success' : 'info'}
+                        style={{ marginBottom: 16 }}
+                    />
+                )}
+
+                {/* Sub-batch breakdown for VIDEO batches */}
+                {verificationType === 'VIDEO' && subBatches.length > 0 && (
+                    <Alert
+                        message="Chi tiết Sub-batches"
+                        description={
+                            loadingSubBatches ? (
+                                <div>Đang tải...</div>
+                            ) : (
+                                <div style={{ marginTop: 8 }}>
+                                    {subBatches.map((sb, idx) => (
+                                        <div key={sb.subBatchId} style={{ marginBottom: 4 }}>
+                                            <Tag>#{idx + 1}</Tag>
+                                            <strong>Provider #{sb.providerId}</strong>: {sb.quantity}{' '}
+                                            {UNIT_LABELS[sb.unit] || sb.unit}
+                                            <Tag
+                                                color={sb.processStatus === 'PENDING' ? 'orange' : 'green'}
+                                                style={{ marginLeft: 8 }}
+                                            >
+                                                {sb.processStatus}
+                                            </Tag>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
+                        }
+                        type="info"
+                        style={{ marginBottom: 16 }}
+                    />
+                )}
+
                 <Form.Item
                     label="Product General (Sản phẩm)"
                     name="prodGenId"
@@ -263,6 +408,69 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
                         type="success"
                         style={{ marginBottom: 16 }}
                     />
+                )}
+
+                {/* Processing Result Display */}
+                {processingResult && (
+                    <>
+                        <Divider>Kết quả xử lý</Divider>
+
+                        <Alert
+                            message={
+                                <div>
+                                    <div style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
+                                        ✅ Đã tạo {processingResult.totalProductDetailsCreated} sản phẩm
+                                    </div>
+                                    {processingResult.verificationType === 'CERTIFICATE' ? (
+                                        <div>
+                                            <Tag color="green">Chứng nhận</Tag>
+                                            Sản phẩm sẽ hiển thị với tên nhà cung cấp #
+                                            {processingResult.providerId} trên website
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <Tag color="blue">Video (Gộp chung)</Tag>
+                                            Sản phẩm sẽ hiển thị không có tên nhà cung cấp
+                                        </div>
+                                    )}
+                                </div>
+                            }
+                            type="success"
+                            style={{ marginTop: 16, marginBottom: 16 }}
+                        />
+
+                        {processingResult.subBatchBreakdowns?.length > 0 && (
+                            <div style={{
+                                background: '#f5f5f5',
+                                padding: 12,
+                                borderRadius: 4,
+                                marginBottom: 16
+                            }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: 8 }}>
+                                    Phân bổ theo nhà cung cấp:
+                                </div>
+                                {processingResult.subBatchBreakdowns.map((sb, idx) => (
+                                    <div key={idx} style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        padding: '4px 0',
+                                        borderBottom: idx < processingResult.subBatchBreakdowns.length - 1
+                                            ? '1px solid #d9d9d9'
+                                            : 'none'
+                                    }}>
+                                        <span>
+                                            <Tag>#{idx + 1}</Tag>
+                                            Provider #{sb.providerId}
+                                        </span>
+                                        <span>
+                                            <strong>{sb.productDetailsCreated}</strong> sản phẩm
+                                            ({sb.quantityProcessed} {UNIT_LABELS[selectedBatch?.unit] || selectedBatch?.unit})
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </>
                 )}
 
                 <Divider />
