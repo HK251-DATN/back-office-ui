@@ -12,6 +12,7 @@ import ManageProduct from "../layout/manage-product/ManageProduct";
 import ManageSaleEvent from "../layout/manage-sale-event/ManageSaleEvent";
 import ManageCategory from "../layout/manage-category/ManageCategory";
 import ManageOrder from "../layout/manage-order/ManageOrder";
+import ManageProvider from "../layout/manage-provider/ManageProvider";
 import PackagingEmployee from "../layout/packaging-employee/PackagingEmployee";
 import DeliveryEmployee from "../layout/delivery-employee/DeliveryEmployee";
 import Login from "../layout/login/Login";
@@ -96,6 +97,11 @@ const AppRouter = () => {
                 <Route path="manage-sale-event" element={
                     <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManageSaleEvent></ManageSaleEvent>
+                    </ProtectedRoute>
+                } />
+                <Route path="manage-provider" element={
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
+                        <ManageProvider></ManageProvider>
                     </ProtectedRoute>
                 } />
                 <Route path="system-setting" element={

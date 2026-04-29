@@ -2,6 +2,7 @@ import Logo from "../logo/Logo";
 import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import PeopleOutlineOutlinedIcon from '@mui/icons-material/PeopleOutlineOutlined';
+import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
@@ -34,6 +35,11 @@ const Sidebar = ({ className = "" }) => {
                     icon={<PeopleOutlineOutlinedIcon />}
                     name={"Quản lý khách hàng"}
                     link={"/manage-customer"}
+                />
+                <SidebarItem
+                    icon={<StorefrontOutlinedIcon />}
+                    name={"Quản lý nhà cung cấp"}
+                    link={"/manage-provider"}
                 />
                 <SidebarItem
                     icon={<ShoppingBasketOutlinedIcon />}
