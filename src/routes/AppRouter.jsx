@@ -14,6 +14,7 @@ import ManageCategory from "../layout/manage-category/ManageCategory";
 import ManageOrder from "../layout/manage-order/ManageOrder";
 import ManageProvider from "../layout/manage-provider/ManageProvider";
 import ManageRawProductDemand from "../layout/manage-raw-product-demand/ManageRawProductDemand";
+import ManageCoupon from "../layout/manage-coupon/ManageCoupon";
 import PackagingEmployee from "../layout/packaging-employee/PackagingEmployee";
 import DeliveryEmployee from "../layout/delivery-employee/DeliveryEmployee";
 import Login from "../layout/login/Login";
@@ -98,6 +99,11 @@ const AppRouter = () => {
                 <Route path="manage-sale-event" element={
                     <ProtectedRoute allowedRoles={["ADMIN"]}>
                         <ManageSaleEvent></ManageSaleEvent>
+                    </ProtectedRoute>
+                } />
+                <Route path="manage-coupon" element={
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
+                        <ManageCoupon></ManageCoupon>
                     </ProtectedRoute>
                 } />
                 <Route path="manage-provider" element={

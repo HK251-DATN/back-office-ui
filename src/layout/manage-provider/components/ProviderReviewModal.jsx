@@ -290,7 +290,7 @@ const ProviderReviewModal = ({ open, provider, onClose, onSuccess }) => {
                         items={tabs}
                     />
 
-                    {canApprove && (
+                    {/* {canApprove && (
                         <>
                             <Divider />
                             <div className="flex justify-center gap-4 pb-4">
@@ -315,7 +315,7 @@ const ProviderReviewModal = ({ open, provider, onClose, onSuccess }) => {
                                 </Button>
                             </div>
                         </>
-                    )}
+                    )} */}
                 </Spin>
             </Modal>
 

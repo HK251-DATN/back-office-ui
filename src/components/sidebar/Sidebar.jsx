@@ -15,6 +15,7 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
 import DeliveryDiningOutlinedIcon from '@mui/icons-material/DeliveryDiningOutlined';
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
 import SidebarItem from "./sidebar-item/SidebarItem";
 
 const Sidebar = ({ className = "" }) => {
@@ -96,6 +97,11 @@ const Sidebar = ({ className = "" }) => {
                     icon={<LoyaltyOutlinedIcon />}
                     name={"Sự kiện khuyến mãi"}
                     link={"/manage-sale-event"}
+                />
+                <SidebarItem
+                    icon={<LocalOfferOutlinedIcon />}
+                    name={"Mã giảm giá"}
+                    link={"/manage-coupon"}
                 />
                 <SidebarItem
                     icon={<SettingsOutlinedIcon />}
