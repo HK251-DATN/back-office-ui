@@ -1,11 +1,14 @@
 // src/components/warehouse/ProductDetailCreateModal.jsx
-import { Modal, Form, InputNumber, Select, Button, message, Alert, Divider, Tag } from 'antd';
+import { Modal, Form, InputNumber, Select, Button, message, Alert, Divider, Tag, Input, Upload, Typography } from 'antd';
+import { SearchOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import axios from '../../../services/axiosInstance';
 import { API_URLS } from '../../../config/api';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import axiosInstance from '../../../services/axiosInstance';
-import { getSubBatchesByBatchId } from '../../../services/productBatchService';
+import { getProductBatches, getSubBatchesByBatchId, uploadProofImages } from '../../../services/productBatchService';
+
+const { Text } = Typography;
 
 const STATUS_OPTIONS = [
     { value: 'STORED', label: 'Đã lưu kho' },
@@ -28,6 +31,7 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [batches, setBatches] = useState([]);
+    const [batchSearch, setBatchSearch] = useState('');
     const [selectedBatch, setSelectedBatch] = useState(null);
     const [suitableProducts, setSuitableProducts] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -42,6 +46,10 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
     const [processingResult, setProcessingResult] = useState(null);
     const [loadingSubBatches, setLoadingSubBatches] = useState(false);
 
+    // Proof images
+    const [fileList, setFileList] = useState([]);
+    const [uploadingProof, setUploadingProof] = useState(false);
+
     useEffect(() => {
         if (open) {
             fetchBatches();
@@ -49,6 +57,7 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
             fetchProductBatchCategory();
             form.resetFields();
             setSelectedBatch(null);
+            setBatchSearch('');
             setSuitableProducts([]);
             setSelectedProduct(null);
             setCalculationPreview('');
@@ -56,6 +65,8 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
             setProviderId(null);
             setSubBatches([]);
             setProcessingResult(null);
+            setFileList([]);
+            setUploadingProof(false);
         }
     }, [open, form]);
 
@@ -75,26 +86,40 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
 
     const getSubSubCategoryName = (id) => {
         const subsubcategory = subSubCategories.find(s => s.subSubcategoryId === id);
-
-        return subsubcategory.name || "";
-    }
+        return subsubcategory?.name || '';
+    };
 
     const fetchBatches = async () => {
         try {
-            const response = await axios.get(`${API_URLS.STORAGE}/api/product-batch?pageNum=1&pageSize=100`);
-            if (response.data.type === 'GOOD') {
-                // Filter only PENDING batches (not yet processed)
-                const pendingBatches = (response.data.detail || []).filter(
-                    batch => batch.processStatus === 'PENDING'
-                );
-                setBatches(pendingBatches);
-            } else if (response.data.type === 'SKIP_AS_GOOD') {
+            const response = await getProductBatches({
+                pageNum: 1,
+                pageSize: 100,
+                processStatus: 'PENDING',
+                sortBy: 'createdAt',
+            });
+            const type = response.data?.type;
+            if (type === 'GOOD' || type === 'SKIP_AS_GOOD') {
+                const rows = response.data.detail?.data ?? [];
+                setBatches(rows.map(item => item.batch));
+            } else {
                 setBatches([]);
             }
         } catch (error) {
             console.error('Failed to fetch batches:', error);
         }
     };
+
+    const filteredBatches = useMemo(() => {
+        const q = batchSearch.trim().toLowerCase();
+        if (!q) return batches;
+        return batches.filter(b => {
+            const catName = getSubSubCategoryName(b.subSubcategoryId).toLowerCase();
+            return (
+                String(b.batchId).includes(q) ||
+                catName.includes(q)
+            );
+        });
+    }, [batches, batchSearch, subSubCategories]);
 
     const fetchStorageTools = async () => {
         try {
@@ -125,13 +150,23 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
         setVerificationType(batch?.verificationType || null);
         setProviderId(batch?.providerId || null);
 
+        // Pre-populate proof images from existing URLs
+        const existingFiles = (batch?.proofImageUrls ?? []).map((url, i) => ({
+            uid: `existing-${i}`,
+            name: `Ảnh ${i + 1}`,
+            status: 'done',
+            url,
+        }));
+        setFileList(existingFiles);
+
         // If VIDEO batch, fetch sub-batches
         if (batch?.verificationType === 'VIDEO') {
             setLoadingSubBatches(true);
             try {
-                const subBatchResponse = await getSubBatchesByBatchId(batchId);
+                const subBatchResponse = await getSubBatchesByBatchId(batchId, 'PENDING');
                 if (subBatchResponse.data.type === 'GOOD' || subBatchResponse.data.type === 'SKIP_AS_GOOD') {
-                    setSubBatches(subBatchResponse.data.detail || []);
+                    const rows = subBatchResponse.data.detail || [];
+                    setSubBatches(rows.map(item => ({ ...item.subBatch, provider: item.provider ?? null })));
                 } else {
                     setSubBatches([]);
                 }
@@ -157,6 +192,34 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
             }
         } catch (error) {
             message.error('Không thể tải danh sách sản phẩm phù hợp');
+        }
+    };
+
+    const handleProofImagesChange = ({ fileList: newList }) => {
+        setFileList(newList);
+    };
+
+    const handleUploadProofImages = async () => {
+        const newFiles = fileList
+            .filter(f => f.originFileObj)
+            .map(f => f.originFileObj);
+
+        if (newFiles.length === 0) {
+            message.warning('Chưa có ảnh mới để tải lên');
+            return;
+        }
+
+        setUploadingProof(true);
+        try {
+            await uploadProofImages(selectedBatch.batchId, newFiles);
+            message.success(`Đã tải lên ${newFiles.length} ảnh thành công`);
+            setFileList(prev =>
+                prev.map(f => f.originFileObj ? { ...f, status: 'done', originFileObj: undefined } : f)
+            );
+        } catch {
+            message.error('Tải lên ảnh thất bại');
+        } finally {
+            setUploadingProof(false);
         }
     };
 
@@ -289,22 +352,52 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
                 onFinish={handleFinish}
                 autoComplete="off"
             >
+                <Form.Item label="Tìm kiếm batch">
+                    <Input
+                        placeholder="Lọc theo ID hoặc tên danh mục..."
+                        prefix={<SearchOutlined className="text-gray-400" />}
+                        value={batchSearch}
+                        onChange={e => setBatchSearch(e.target.value)}
+                        allowClear
+                    />
+                </Form.Item>
+
                 <Form.Item
-                    label="Product Batch"
+                    label={`Product Batch (${filteredBatches.length} kết quả)`}
                     name="batchId"
                     rules={[{ required: true, message: 'Vui lòng chọn batch!' }]}
                 >
                     <Select
                         placeholder="Chọn batch cần xử lý"
-                        showSearch
-                        optionFilterProp="children"
                         onChange={handleBatchChange}
+                        optionLabelProp="label"
+                        showSearch={false}
+                        virtual={false}
                     >
-                        {batches.map(batch => (
-                            <Select.Option key={batch.batchId} value={batch.batchId}>
-                                Batch #{batch.batchId} - {batch.quantity} {UNIT_LABELS[batch.unit] || batch.unit} - {getSubSubCategoryName(batch.subSubcategoryId)}
-                            </Select.Option>
-                        ))}
+                        {filteredBatches.map(batch => {
+                            const catName = getSubSubCategoryName(batch.subSubcategoryId);
+                            const label = `#${batch.batchId} · ${batch.quantity} ${UNIT_LABELS[batch.unit] || batch.unit} · ${catName || `Cat #${batch.subSubcategoryId}`}`;
+                            return (
+                                <Select.Option key={batch.batchId} value={batch.batchId} label={label}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span>
+                                            <strong>#{batch.batchId}</strong>
+                                            <span style={{ margin: '0 6px', color: '#999' }}>·</span>
+                                            {catName || `Cat #${batch.subSubcategoryId}`}
+                                        </span>
+                                        <span style={{ color: '#666', fontSize: 12 }}>
+                                            {batch.quantity} {UNIT_LABELS[batch.unit] || batch.unit}
+                                            <Tag
+                                                color={batch.verificationType === 'CERTIFICATE' ? 'purple' : 'cyan'}
+                                                style={{ marginLeft: 8, fontSize: 11 }}
+                                            >
+                                                {batch.verificationType === 'CERTIFICATE' ? 'Chứng nhận' : 'Video'}
+                                            </Tag>
+                                        </span>
+                                    </div>
+                                </Select.Option>
+                            );
+                        })}
                     </Select>
                 </Form.Item>
 
@@ -360,25 +453,70 @@ function ProductDetailCreateModal({ open, onClose, onSuccess }) {
                                 <div>Đang tải...</div>
                             ) : (
                                 <div style={{ marginTop: 8 }}>
-                                    {subBatches.map((sb, idx) => (
-                                        <div key={sb.subBatchId} style={{ marginBottom: 4 }}>
-                                            <Tag>#{idx + 1}</Tag>
-                                            <strong>Provider #{sb.providerId}</strong>: {sb.quantity}{' '}
-                                            {UNIT_LABELS[sb.unit] || sb.unit}
-                                            <Tag
-                                                color={sb.processStatus === 'PENDING' ? 'orange' : 'green'}
-                                                style={{ marginLeft: 8 }}
-                                            >
-                                                {sb.processStatus}
-                                            </Tag>
-                                        </div>
-                                    ))}
+                                    {subBatches.map((sb, idx) => {
+                                        const providerName = sb.provider
+                                            ? `${sb.provider.fName ?? ''} ${sb.provider.lName ?? ''}`.trim() || `Provider #${sb.provider.providerId}`
+                                            : '—';
+                                        return (
+                                            <div key={sb.subBatchId} style={{ marginBottom: 4 }}>
+                                                <Tag>#{idx + 1}</Tag>
+                                                <strong>{providerName}</strong>: {sb.quantity}{' '}
+                                                {UNIT_LABELS[sb.unit] || sb.unit}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )
                         }
                         type="info"
                         style={{ marginBottom: 16 }}
                     />
+                )}
+
+                {/* Proof images upload — only visible once a batch is selected */}
+                {selectedBatch && (
+                    <>
+                        <Divider orientation="left" style={{ fontSize: 13, color: '#555', margin: '4px 0 12px' }}>
+                            Ảnh chứng minh
+                        </Divider>
+
+                        <Upload
+                            listType="picture-card"
+                            fileList={fileList}
+                            beforeUpload={() => false}
+                            onChange={handleProofImagesChange}
+                            accept="image/*"
+                            multiple
+                        >
+                            <div>
+                                <PlusOutlined />
+                                <div style={{ marginTop: 6, fontSize: 12 }}>Thêm ảnh</div>
+                            </div>
+                        </Upload>
+
+                        {fileList.some(f => f.originFileObj) && (
+                            <div style={{ marginTop: 8, marginBottom: 16 }}>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    {fileList.filter(f => f.originFileObj).length} ảnh mới chưa được tải lên
+                                </Text>
+                                <Button
+                                    icon={<UploadOutlined />}
+                                    size="small"
+                                    loading={uploadingProof}
+                                    onClick={handleUploadProofImages}
+                                    style={{ marginLeft: 12 }}
+                                >
+                                    Tải lên ngay
+                                </Button>
+                            </div>
+                        )}
+
+                        {fileList.length === 0 && (
+                            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 16 }}>
+                                Chưa có ảnh chứng minh nào
+                            </Text>
+                        )}
+                    </>
                 )}
 
                 <Form.Item

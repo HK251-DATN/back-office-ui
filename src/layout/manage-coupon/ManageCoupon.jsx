@@ -9,6 +9,8 @@ const { Option } = Select;
 const ManageCoupon = () => {
     const [searchString, setSearchString] = useState('');
     const [discountTypeFilter, setDiscountTypeFilter] = useState(undefined);
+    const [publicYnFilter, setPublicYnFilter] = useState(undefined);
+    const [isActiveFilter, setIsActiveFilter] = useState(undefined);
     const [appliedFilters, setAppliedFilters] = useState({});
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [formOpen, setFormOpen] = useState(false);
@@ -16,18 +18,22 @@ const ManageCoupon = () => {
 
     const handleApplyFilters = () => {
         const filters = {};
-        if (searchString) filters.couponCode = searchString;
-        if (discountTypeFilter) filters.discountType = discountTypeFilter;
+        if (searchString)             filters.couponCode   = searchString;
+        if (discountTypeFilter)       filters.discountType = discountTypeFilter;
+        if (publicYnFilter)           filters.publicYn     = publicYnFilter;
+        if (isActiveFilter != null)   filters.isActive     = isActiveFilter;
         setAppliedFilters(filters);
     };
 
     const handleClearFilters = () => {
         setSearchString('');
         setDiscountTypeFilter(undefined);
+        setPublicYnFilter(undefined);
+        setIsActiveFilter(undefined);
         setAppliedFilters({});
     };
 
-    const hasActiveFilters = searchString || discountTypeFilter;
+    const hasActiveFilters = searchString || discountTypeFilter || publicYnFilter || isActiveFilter != null;
 
     const handleCreate = () => {
         setEditCouponId(null);
@@ -64,7 +70,7 @@ const ManageCoupon = () => {
                         onChange={(e) => setSearchString(e.target.value)}
                         onPressEnter={handleApplyFilters}
                         prefix={<SearchOutlined />}
-                        style={{ width: 260 }}
+                        style={{ width: 240 }}
                     />
 
                     <Select
@@ -72,10 +78,32 @@ const ManageCoupon = () => {
                         allowClear
                         value={discountTypeFilter}
                         onChange={setDiscountTypeFilter}
-                        style={{ width: 200 }}
+                        style={{ width: 180 }}
                     >
                         <Option value="PERCENTAGE">Phần trăm</Option>
                         <Option value="FIXED_AMOUNT">Số tiền cố định</Option>
+                    </Select>
+
+                    <Select
+                        placeholder="Hiển thị"
+                        allowClear
+                        value={publicYnFilter}
+                        onChange={setPublicYnFilter}
+                        style={{ width: 150 }}
+                    >
+                        <Option value="Y">Công khai</Option>
+                        <Option value="N">Riêng tư</Option>
+                    </Select>
+
+                    <Select
+                        placeholder="Trạng thái"
+                        allowClear
+                        value={isActiveFilter}
+                        onChange={setIsActiveFilter}
+                        style={{ width: 170 }}
+                    >
+                        <Option value={true}>Đang hoạt động</Option>
+                        <Option value={false}>Hết hiệu lực</Option>
                     </Select>
 
                     <Space>

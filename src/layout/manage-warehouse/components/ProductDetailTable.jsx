@@ -1,293 +1,252 @@
-// src/components/warehouse/ProductDetailTable.jsx
-import { useState, useEffect } from 'react';
-import { Table, Tag, message, Space } from 'antd';
-import ProductDetailDetailModal from './ProductDetailDetailModal';
+import { useState, useEffect, useCallback } from 'react';
+import { Table, Tag, Avatar, Typography, message } from 'antd';
+import { ShoppingOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import ViewButton from '../../../components/ViewButton';
-import EditButton from '../../../components/EditButton';
-import DeleteButton from '../../../components/DeleteButton';
-import axios from '../../../services/axiosInstance';
-import { API_URLS } from '../../../config/api';
+import { getAvailableProducts, getProductDetails } from '../../../services/productBatchService';
 
-const STATUS_CONFIG = {
-    STORED: { color: 'green', label: 'Đã lưu kho' },
-    PROCESSING: { color: 'blue', label: 'Đang xử lý' },
-    SOLD: { color: 'orange', label: 'Đã bán' },
-    EXPIRED: { color: 'red', label: 'Hết hạn' },
-    PICKED: { color: 'cyan', label: 'Đã chọn' },
-    IN_TRANSIT: { color: 'geekblue', label: 'Đang vận chuyển' },
-    DELIVERED: { color: 'purple', label: 'Đã giao' },
-    RETURNED: { color: 'volcano', label: 'Đã trả lại' },
-    DISPOSED: { color: 'magenta', label: 'Đã hủy' },
+const { Text } = Typography;
+
+const UNIT_LABELS = {
+    KILOGRAM: 'kg', GRAM: 'g', LITER: 'lít', MILLILITER: 'ml',
+    PIECE: 'cái', DOZEN: 'tá', PACK: 'gói', BOX: 'hộp', BOTTLE: 'chai',
 };
 
-function ProductDetailTable({ refreshTrigger }) {
-    const [groupedData, setGroupedData] = useState([]);
+const DETAIL_STATUS_CONFIG = {
+    STORED:     { color: 'green',    label: 'Đã lưu kho' },
+    PROCESSING: { color: 'blue',     label: 'Đang xử lý' },
+    SOLD:       { color: 'orange',   label: 'Đã bán' },
+    EXPIRED:    { color: 'red',      label: 'Hết hạn' },
+    PICKED:     { color: 'cyan',     label: 'Đã chọn' },
+    IN_TRANSIT: { color: 'geekblue', label: 'Đang vận chuyển' },
+    DELIVERED:  { color: 'purple',   label: 'Đã giao' },
+    RETURNED:   { color: 'volcano',  label: 'Đã trả lại' },
+    DISPOSED:   { color: 'magenta',  label: 'Đã hủy' },
+};
+
+const VERIFY_TYPE_CONFIG = {
+    CERTIFICATE: { color: 'green', label: 'Chứng chỉ' },
+    VIDEO:       { color: 'blue',  label: 'Video' },
+};
+
+// ── Inner sub-table ──────────────────────────────────────────────────────────
+
+const detailColumns = [
+    {
+        title: 'ID',
+        dataIndex: 'prodDetailId',
+        key: 'prodDetailId',
+        width: 80,
+    },
+    {
+        title: 'Trạng thái',
+        dataIndex: 'status',
+        key: 'status',
+        width: 130,
+        render: (status) => {
+            const cfg = DETAIL_STATUS_CONFIG[status] || { color: 'default', label: status };
+            return <Tag color={cfg.color}>{cfg.label}</Tag>;
+        },
+    },
+    {
+        title: 'Giá',
+        dataIndex: 'price',
+        key: 'price',
+        width: 120,
+        render: (price) => price != null ? `${price.toLocaleString('vi-VN')} ₫` : '—',
+    },
+    {
+        title: 'Storage Tool',
+        dataIndex: 'storageToolId',
+        key: 'storageToolId',
+        width: 110,
+        render: (id) => id ?? '—',
+    },
+    {
+        title: 'Sub-batch ID',
+        dataIndex: 'subBatchId',
+        key: 'subBatchId',
+        width: 110,
+        render: (id) => id ?? '—',
+    },
+    {
+        title: 'Ngày tạo',
+        dataIndex: 'createdAt',
+        key: 'createdAt',
+        width: 150,
+        render: (d) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '—',
+    },
+];
+
+function ProductDetailsSubTable({ batchId }) {
+    const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 9999,
-        total: 0,
-    });
-    const [detailModalOpen, setDetailModalOpen] = useState(false);
-    const [selectedDetailId, setSelectedDetailId] = useState(null);
+    const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
-    useEffect(() => {
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pagination.current, pagination.pageSize, refreshTrigger]);
-
-    const fetchData = async () => {
+    const fetch = useCallback(async (page = 1, size = 10) => {
         setLoading(true);
         try {
-            const response = await axios.get(`${API_URLS.STORAGE}/api/product-detail`, {
-                params: {
-                    pageNum: pagination.current,
-                    pageSize: pagination.pageSize,
-                },
-            });
-
-            if (response.data.type === 'GOOD') {
-                const details = response.data.detail;
-                const detailsArray = Array.isArray(details) ? details : [];
-
-                // Group data by batchId and prodGenId
-                const grouped = groupProductDetails(detailsArray);
-                setGroupedData(grouped);
-
-                setPagination(prev => ({
-                    ...prev,
-                    total: response.data.totalElements || grouped.length,
-                }));
-            } else if (response.data.type === 'SKIP_AS_GOOD') {
-                setGroupedData([]);
+            const res = await getProductDetails({ batchId, pageNum: page, pageSize: size });
+            const type = res.data?.type;
+            if (type === 'GOOD' || type === 'SKIP_AS_GOOD') {
+                const detail = res.data.detail || {};
+                setData(detail.data || []);
+                setPagination({ current: detail.page ?? page, pageSize: detail.size ?? size, total: detail.totalElements ?? 0 });
+            } else {
+                setData([]);
             }
-        } catch (error) {
-            message.error('Không thể tải dữ liệu product detail');
-            console.error('Fetch error:', error);
+        } catch {
+            message.error('Không thể tải chi tiết sản phẩm');
+            setData([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, [batchId]);
 
-    const groupProductDetails = (details) => {
-        const groups = {};
-
-        details.forEach(item => {
-            const key = `${item.batchId}-${item.prodGenId}`;
-            if (!groups[key]) {
-                groups[key] = {
-                    key: key,
-                    batchId: item.batchId,
-                    prodGenId: item.prodGenId,
-                    count: 0,
-                    totalPrice: 0,
-                    avgPrice: 0,
-                    children: [],
-                    isGroup: true,
-                };
-            }
-            groups[key].count += 1;
-            groups[key].totalPrice += item.price || 0;
-            groups[key].children.push({
-                ...item,
-                key: `detail-${item.prodDetailId}`,
-                isGroup: false,
-            });
-        });
-
-        // Calculate average price for each group
-        return Object.values(groups).map(group => ({
-            ...group,
-            avgPrice: group.count > 0 ? group.totalPrice / group.count : 0,
-        }));
-    };
-
-    const handleView = (record) => {
-        setSelectedDetailId(record.prodDetailId);
-        setDetailModalOpen(true);
-    };
-
-    const handleEdit = () => {
-        message.info('Chức năng chỉnh sửa đang được phát triển');
-    };
-
-    const handleDelete = () => {
-        message.info('Chức năng xóa đang được phát triển');
-    };
-
-    const columns = [
-        {
-            title: 'Batch ID',
-            dataIndex: 'batchId',
-            key: 'batchId',
-            width: '10%',
-            render: (batchId, record) => {
-                if (record.isGroup) {
-                    return <strong>Batch #{batchId}</strong>;
-                }
-                return batchId;
-            },
-        },
-        {
-            title: 'Product Gen ID',
-            dataIndex: 'prodGenId',
-            key: 'prodGenId',
-            width: '12%',
-            render: (prodGenId, record) => {
-                if (record.isGroup) {
-                    return <strong>Product #{prodGenId}</strong>;
-                }
-                return prodGenId;
-            },
-        },
-        {
-            title: 'ID / Số lượng',
-            key: 'idOrCount',
-            width: '12%',
-            render: (_, record) => {
-                if (record.isGroup) {
-                    return (
-                        <Tag color="blue" style={{ fontSize: 14 }}>
-                            {record.count} sản phẩm
-                        </Tag>
-                    );
-                }
-                return `ID: ${record.prodDetailId}`;
-            },
-        },
-        {
-            title: 'Giá',
-            key: 'price',
-            width: '15%',
-            render: (_, record) => {
-                if (record.isGroup) {
-                    return (
-                        <div>
-                            <div>TB: {record.avgPrice?.toLocaleString('vi-VN')} ₫</div>
-                            <div style={{ fontSize: 11, color: '#999' }}>
-                                Tổng: {record.totalPrice?.toLocaleString('vi-VN')} ₫
-                            </div>
-                        </div>
-                    );
-                }
-                return <span>{record.price?.toLocaleString('vi-VN')} ₫</span>;
-            },
-        },
-        {
-            title: 'Đánh giá',
-            dataIndex: 'numOfStar',
-            key: 'numOfStar',
-            width: '10%',
-            render: (stars, record) => {
-                if (record.isGroup) return '-';
-                return stars ? `${stars} ⭐` : '-';
-            },
-        },
-        {
-            title: 'Storage Tool',
-            dataIndex: 'storageToolId',
-            key: 'storageToolId',
-            width: '11%',
-            render: (id, record) => {
-                if (record.isGroup) return '-';
-                return id || '-';
-            },
-        },
-        {
-            title: 'Trạng thái',
-            dataIndex: 'status',
-            key: 'status',
-            width: '12%',
-            render: (status, record) => {
-                if (record.isGroup) {
-                    // Count statuses in children
-                    const statusCounts = {};
-                    record.children.forEach(child => {
-                        statusCounts[child.status] = (statusCounts[child.status] || 0) + 1;
-                    });
-                    const mostCommon = Object.entries(statusCounts).sort((a, b) => b[1] - a[1])[0];
-                    if (!mostCommon) return '-';
-                    const config = STATUS_CONFIG[mostCommon[0]] || { color: 'default', label: mostCommon[0] };
-                    return <Tag color={config.color}>{config.label} ({mostCommon[1]})</Tag>;
-                }
-                const config = STATUS_CONFIG[status] || { color: 'default', label: status };
-                return <Tag color={config.color}>{config.label}</Tag>;
-            },
-        },
-        {
-            title: 'Ngày tạo',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            width: '13%',
-            render: (date, record) => {
-                if (record.isGroup) {
-                    // Show earliest date from children
-                    const dates = record.children.map(c => c.createdAt).filter(Boolean);
-                    if (dates.length === 0) return '-';
-                    const earliest = dates.sort()[0];
-                    return dayjs(earliest).format('DD/MM/YYYY');
-                }
-                return date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '-';
-            },
-        },
-        {
-            title: 'Thao tác',
-            key: 'action',
-            width: '15%',
-            render: (_, record) => {
-                if (record.isGroup) return '-';
-                return (
-                    <Space size="small">
-                        <ViewButton onClick={() => handleView(record)} />
-                        <EditButton onClick={() => handleEdit(record)} />
-                        <DeleteButton onClick={() => handleDelete(record)} />
-                    </Space>
-                );
-            },
-        },
-    ];
-
-    const handleTableChange = (newPagination) => {
-        setPagination({
-            current: newPagination.current,
-            pageSize: newPagination.pageSize,
-            total: newPagination.total,
-        });
-    };
+    useEffect(() => { fetch(1, 10); }, [fetch]);
 
     return (
-        <>
-            <Table
-                className='border border-gray-200 rounded-2xl'
-                columns={columns}
-                dataSource={groupedData}
-                loading={loading}
-                rowKey="key"
-                expandable={{
-                    defaultExpandAllRows: false,
-                    indentSize: 30,
-                }}
-                pagination={{
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                    total: pagination.total,
-                    showSizeChanger: true,
-                    showTotal: (total) => `Tổng ${total} nhóm sản phẩm`,
-                    pageSizeOptions: ['10', '20', '50'],
-                }}
-                onChange={handleTableChange}
-            />
+        <Table
+            rowKey="prodDetailId"
+            columns={detailColumns}
+            dataSource={data}
+            loading={loading}
+            size="small"
+            pagination={{
+                current: pagination.current,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+                showSizeChanger: false,
+                showTotal: (t) => `${t} chi tiết`,
+                onChange: (page, size) => fetch(page, size),
+            }}
+            style={{ margin: '8px 40px' }}
+        />
+    );
+}
 
-            <ProductDetailDetailModal
-                detailId={selectedDetailId}
-                open={detailModalOpen}
-                onClose={() => {
-                    setDetailModalOpen(false);
-                    setSelectedDetailId(null);
-                }}
-            />
-        </>
+// ── Outer batch table ────────────────────────────────────────────────────────
+
+const batchColumns = [
+    {
+        title: 'Batch ID',
+        dataIndex: 'batchId',
+        key: 'batchId',
+        width: 90,
+        render: (id) => <strong>#{id}</strong>,
+    },
+    {
+        title: 'Sản phẩm',
+        key: 'product',
+        width: 200,
+        render: (_, record) => (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Avatar
+                    size={32}
+                    src={record.img || undefined}
+                    icon={!record.img && <ShoppingOutlined />}
+                    shape="square"
+                />
+                <div style={{ lineHeight: 1.3 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{record.name}</div>
+                    <Text type="secondary" style={{ fontSize: 11 }}>ID: {record.prodGenId}</Text>
+                </div>
+            </div>
+        ),
+    },
+    {
+        title: 'Loại xác minh',
+        dataIndex: 'verificationType',
+        key: 'verificationType',
+        width: 130,
+        render: (type) => {
+            const cfg = VERIFY_TYPE_CONFIG[type] || { color: 'default', label: type };
+            return <Tag color={cfg.color}>{cfg.label}</Tag>;
+        },
+    },
+    {
+        title: 'SL batch',
+        key: 'batchQuantity',
+        width: 110,
+        render: (_, record) =>
+            `${record.batchQuantity} ${UNIT_LABELS[record.batchUnit] || record.batchUnit}`,
+    },
+    {
+        title: 'Đơn vị đóng gói',
+        key: 'unitQuantity',
+        width: 130,
+        render: (_, record) =>
+            `${record.unitQuantity} ${UNIT_LABELS[record.unit] || record.unit} / gói`,
+    },
+    {
+        title: 'Ngày nhận',
+        dataIndex: 'receivedAt',
+        key: 'receivedAt',
+        width: 120,
+        render: (d) => d ? dayjs(d).format('DD/MM/YYYY') : '—',
+    },
+    {
+        title: 'Hết hạn',
+        dataIndex: 'expiredAt',
+        key: 'expiredAt',
+        width: 120,
+        render: (d) => d ? dayjs(d).format('DD/MM/YYYY') : '—',
+    },
+];
+
+function ProductDetailTable({ refreshTrigger }) {
+    const [batches, setBatches] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+
+    const fetchBatches = useCallback(async (page, size) => {
+        setLoading(true);
+        try {
+            const res = await getAvailableProducts({ pageNum: page, pageSize: size });
+            const type = res.data?.type;
+            if (type === 'GOOD' || type === 'SKIP_AS_GOOD') {
+                const detail = res.data.detail || {};
+                setBatches(detail.data || []);
+                setPagination({ current: detail.page ?? page, pageSize: detail.size ?? size, total: detail.totalElements ?? 0 });
+            } else {
+                setBatches([]);
+            }
+        } catch {
+            message.error('Không thể tải danh sách sản phẩm');
+            setBatches([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchBatches(1, pagination.pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fetchBatches, refreshTrigger]);
+
+    return (
+        <Table
+            className="border border-gray-200 rounded-2xl"
+            rowKey="batchId"
+            columns={batchColumns}
+            dataSource={batches}
+            loading={loading}
+            expandable={{
+                expandedRowRender: (record) => (
+                    <ProductDetailsSubTable batchId={record.batchId} />
+                ),
+            }}
+            pagination={{
+                current: pagination.current,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50'],
+                showTotal: (t) => `Tổng ${t} batch`,
+                onChange: (page, size) => fetchBatches(page, size),
+                onShowSizeChange: (_, size) => fetchBatches(1, size),
+            }}
+            scroll={{ x: 900 }}
+        />
     );
 }
 

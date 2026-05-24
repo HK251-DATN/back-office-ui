@@ -28,16 +28,16 @@ const Sidebar = ({ className = "" }) => {
                     name={"Tổng quan"}
                     link={"/dashboard"}
                 />
-                <SidebarItem
+                {/* <SidebarItem
                     icon={<ManageAccountsOutlinedIcon />}
                     name={"Quản lý nhân viên"}
                     link={"/manage-employee"}
-                />
-                <SidebarItem
+                /> */}
+                {/* <SidebarItem
                     icon={<PeopleOutlineOutlinedIcon />}
                     name={"Quản lý khách hàng"}
                     link={"/manage-customer"}
-                />
+                /> */}
                 <SidebarItem
                     icon={<StorefrontOutlinedIcon />}
                     name={"Quản lý nhà cung cấp"}
@@ -58,11 +58,11 @@ const Sidebar = ({ className = "" }) => {
                     name={"Quản lý đơn hàng"}
                     link={"/manage-order"}
                 />
-                <SidebarItem
+                {/* <SidebarItem
                     icon={<Inventory2OutlinedIcon />}
                     name={"Đóng gói"}
                     link={"/manage-packaging"}
-                />
+                /> */}
                 <SidebarItem
                     icon={<AssignmentIndOutlinedIcon />}
                     name={"Nhiệm vụ đóng gói"}
@@ -73,11 +73,11 @@ const Sidebar = ({ className = "" }) => {
                     name={"Nhiệm vụ giao hàng"}
                     link={"/delivery/employee"}
                 />
-                <SidebarItem
+                {/* <SidebarItem
                     icon={<LocalShippingOutlinedIcon />}
                     name={"Vận chuyển"}
                     link={"/manage-shipping"}
-                />
+                /> */}
                 <SidebarItem
                     icon={<WarehouseOutlinedIcon />}
                     name={"Quản lý kho"}
@@ -88,11 +88,11 @@ const Sidebar = ({ className = "" }) => {
                     name={"Yêu cầu nguyên liệu"}
                     link={"/manage-raw-product-demand"}
                 />
-                <SidebarItem
+                {/* <SidebarItem
                     icon={<ArticleOutlinedIcon />}
                     name={"Quản lý nội dung"}
                     link={"/manage-content"}
-                />
+                /> */}
                 <SidebarItem
                     icon={<LoyaltyOutlinedIcon />}
                     name={"Sự kiện khuyến mãi"}

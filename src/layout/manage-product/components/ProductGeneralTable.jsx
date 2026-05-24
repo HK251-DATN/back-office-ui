@@ -65,7 +65,7 @@ function ProductGeneralTable() {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get(`${API_URLS.MAIN}/api/product-general`);
+            const response = await axios.get(`${API_URLS.MAIN}/api/product-general?pageSize=200`);
             if (response.data.type === 'GOOD') {
                 setData(response.data.detail);
             } else {

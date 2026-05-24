@@ -1,7 +1,9 @@
-import { Modal, Table, Tag, Space, Button, Tooltip, message } from "antd";
-import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
+import { Modal, Table, Tag, Space, Button, Tooltip, message, Avatar, Typography } from "antd";
+import { CheckOutlined, CloseOutlined, UserOutlined } from "@ant-design/icons";
 import { useState, useEffect } from "react";
 import { getSubBatchesByBatchId } from "../../../services/productBatchService";
+
+const { Text } = Typography;
 
 const unitMap = {
   KILOGRAM: "kg",
@@ -17,17 +19,34 @@ const unitMap = {
 
 const statusMap = {
   WAIT_FOR_DELIVERY: { label: "Chờ giao hàng", color: "orange" },
-  PENDING: { label: "Chờ xử lý", color: "blue" },
-  PROCESSED: { label: "Đã xử lý", color: "green" },
-  REJECTED: { label: "Đã từ chối", color: "red" },
-  EXPIRED: { label: "Hết hạn", color: "gray" },
+  PENDING:           { label: "Chờ xử lý",     color: "blue" },
+  PROCESSED:         { label: "Đã xử lý",       color: "green" },
+  REJECTED:          { label: "Đã từ chối",     color: "red" },
+  EXPIRED:           { label: "Hết hạn",         color: "default" },
 };
+
+function ProviderCell({ provider }) {
+  if (!provider) return <Text type="secondary">—</Text>;
+  const fullName = `${provider.fName} ${provider.lName}`.trim();
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <Avatar
+        size={26}
+        src={provider.avtUrl || undefined}
+        icon={!provider.avtUrl && <UserOutlined />}
+      />
+      <div style={{ lineHeight: 1.3 }}>
+        <div style={{ fontSize: 13 }}>{fullName || `Provider #${provider.providerId}`}</div>
+        <Text type="secondary" style={{ fontSize: 11 }}>ID: {provider.providerId}</Text>
+      </div>
+    </div>
+  );
+}
 
 const SubBatchDetailModal = ({
   open,
   onCancel,
   batch,
-  providerMap,
   onAcceptSubBatch,
   onRejectSubBatch,
 }) => {
@@ -46,9 +65,13 @@ const SubBatchDetailModal = ({
       const response = await getSubBatchesByBatchId(batch.batchId);
       const responseType = response.data?.type;
       if (responseType === "GOOD" || responseType === "SKIP_AS_GOOD") {
-        setSubBatches(response.data.detail || []);
+        const rows = response.data.detail ?? [];
+        setSubBatches(
+          rows.map(item => ({ ...item.subBatch, provider: item.provider ?? null }))
+        );
       } else {
         message.error("Không thể tải danh sách batch con");
+        setSubBatches([]);
       }
     } catch (error) {
       console.error("Error fetching sub-batches:", error);
@@ -63,24 +86,24 @@ const SubBatchDetailModal = ({
       title: "ID",
       dataIndex: "subBatchId",
       key: "subBatchId",
-      width: 80,
+      width: 70,
     },
     {
       title: "Nhà cung cấp",
-      dataIndex: "providerId",
-      key: "providerId",
-      render: (providerId) => providerMap[providerId] || `ID: ${providerId}`,
+      key: "provider",
+      render: (_, record) => <ProviderCell provider={record.provider} />,
     },
     {
       title: "Số lượng",
-      dataIndex: "quantity",
       key: "quantity",
-      render: (val, record) => `${val} ${unitMap[record.unit] || record.unit}`,
+      width: 120,
+      render: (_, record) => `${record.quantity} ${unitMap[record.unit] || record.unit}`,
     },
     {
       title: "Trạng thái",
       dataIndex: "processStatus",
       key: "processStatus",
+      width: 140,
       render: (status) => {
         const config = statusMap[status] || { label: status, color: "default" };
         return <Tag color={config.color}>{config.label}</Tag>;
@@ -91,13 +114,13 @@ const SubBatchDetailModal = ({
       dataIndex: "note",
       key: "note",
       ellipsis: true,
-      render: (text) => text || "-",
+      render: (text) => text || <Text type="secondary">—</Text>,
     },
     {
       title: "Hành động",
       key: "actions",
-      width: 120,
-      render: (_, record) => (
+      width: 100,
+      render: (_, record) =>
         record.processStatus === "WAIT_FOR_DELIVERY" ? (
           <Space>
             <Tooltip title="Chấp nhận">
@@ -117,8 +140,9 @@ const SubBatchDetailModal = ({
               />
             </Tooltip>
           </Space>
-        ) : <span>-</span>
-      ),
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
     },
   ];
 
@@ -127,18 +151,23 @@ const SubBatchDetailModal = ({
   return (
     <Modal
       open={open}
-      title={`Chi tiết Batch con - Batch #${batch.batchId}`}
+      title={`Chi tiết Batch con — Batch #${batch.batchId}`}
       onCancel={onCancel}
       footer={[
         <Button key="close" onClick={onCancel}>
           Đóng
-        </Button>
+        </Button>,
       ]}
       width={900}
     >
       <div style={{ marginBottom: 16 }}>
-        <p><strong>Tổng số lượng batch cha:</strong> {batch.quantity} {unitMap[batch.unit] || batch.unit}</p>
-        <p><strong>Loại xác minh:</strong> VIDEO (nhiều nhà cung cấp)</p>
+        <p>
+          <strong>Tổng số lượng batch cha:</strong> {batch.quantity}{" "}
+          {unitMap[batch.unit] || batch.unit}
+        </p>
+        <p>
+          <strong>Loại xác minh:</strong> VIDEO (nhiều nhà cung cấp)
+        </p>
       </div>
 
       <Table
@@ -148,6 +177,7 @@ const SubBatchDetailModal = ({
         loading={loading}
         pagination={false}
         scroll={{ x: 800 }}
+        locale={{ emptyText: "Không có batch con nào" }}
       />
     </Modal>
   );

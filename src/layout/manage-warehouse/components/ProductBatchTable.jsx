@@ -1,6 +1,6 @@
-// src/components/warehouse/ProductBatchTable.jsx
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Tag, message, Space, Modal } from 'antd';
+import { Table, Tag, message, Space, Modal, Avatar, Tooltip } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 import ProductBatchDetailModal from './ProductBatchDetailModal';
 import ProductBatchEditModal from './ProductBatchEditModal';
 import dayjs from 'dayjs';
@@ -17,14 +17,27 @@ const UNIT_LABELS = {
     MILLILITER: 'mL',
 };
 
-function ProductBatchTable({ refreshTrigger }) {
+const STATUS_CONFIG = {
+    WAIT_FOR_DELIVERY: { color: 'blue',    label: 'Chờ giao' },
+    PENDING:           { color: 'orange',  label: 'Chờ xử lý' },
+    PROCESSED:         { color: 'green',   label: 'Đã xử lý' },
+    EXPIRED:           { color: 'red',     label: 'Hết hạn' },
+    REJECTED:          { color: 'volcano', label: 'Từ chối' },
+};
+
+const VERIFICATION_CONFIG = {
+    CERTIFICATE: { color: 'purple', label: 'Chứng nhận' },
+    VIDEO:        { color: 'cyan',   label: 'Video' },
+};
+
+function ProductBatchTable({ filters = {}, refreshTrigger }) {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({
-        current: 1,
-        pageSize: 10,
-        total: 0,
-    });
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [total, setTotal] = useState(0);
+    const [sortBy, setSortBy] = useState(undefined);
+    const [sortDir, setSortDir] = useState(undefined);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [selectedBatchId, setSelectedBatchId] = useState(null);
     const [editModalOpen, setEditModalOpen] = useState(false);
@@ -34,7 +47,7 @@ function ProductBatchTable({ refreshTrigger }) {
     const fetchSubSubcategories = useCallback(async () => {
         try {
             const response = await getSubSubcategories();
-            if (response.data.type === 'GOOD') {
+            if (response.data?.type === 'GOOD') {
                 setSubSubcategories(response.data.detail);
             }
         } catch (error) {
@@ -42,28 +55,42 @@ function ProductBatchTable({ refreshTrigger }) {
         }
     }, []);
 
+    useEffect(() => {
+        fetchSubSubcategories();
+    }, [fetchSubSubcategories]);
+
     const getSubSubcategoryName = (id) => {
-        const category = subSubcategories.find(cat => cat.subSubcategoryId === id);
-        return category ? category.name : '';
+        const cat = subSubcategories.find(c => c.subSubcategoryId === id);
+        return cat ? cat.name : '';
     };
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (currentPage, currentPageSize, currentSortBy, currentSortDir) => {
         setLoading(true);
         try {
-            const response = await getProductBatches({
-                pageNum: pagination.current,
-                pageSize: pagination.pageSize,
-            });
+            const params = {
+                pageNum: currentPage,
+                pageSize: currentPageSize,
+            };
+            if (filters.processStatus)    params.processStatus    = filters.processStatus;
+            if (filters.verificationType) params.verificationType = filters.verificationType;
+            if (currentSortBy)            params.sortBy           = currentSortBy;
+            if (currentSortDir)           params.sortDir          = currentSortDir;
 
-            if (response.data.type === 'GOOD') {
-                const batches = response.data.detail;
-                setData(Array.isArray(batches) ? batches : []);
-                setPagination(prev => ({
-                    ...prev,
-                    total: response.data.totalElements || (Array.isArray(batches) ? batches.length : 0),
+            const response = await getProductBatches(params);
+            const type = response.data?.type;
+
+            if (type === 'GOOD' || type === 'SKIP_AS_GOOD') {
+                const detail = response.data.detail;
+                const normalized = (detail?.data ?? []).map(item => ({
+                    ...item.batch,
+                    provider: item.provider ?? null,
                 }));
-            } else if (response.data.type === 'SKIP_AS_GOOD') {
+                setData(normalized);
+                setTotal(detail?.totalElements ?? 0);
+            } else {
+                message.error(response.data?.message || 'Không thể tải dữ liệu product batch');
                 setData([]);
+                setTotal(0);
             }
         } catch (error) {
             message.error('Không thể tải dữ liệu product batch');
@@ -71,12 +98,26 @@ function ProductBatchTable({ refreshTrigger }) {
         } finally {
             setLoading(false);
         }
-    }, [pagination.current, pagination.pageSize]);
+    }, [filters]);
 
     useEffect(() => {
-        fetchData();
-        fetchSubSubcategories();
-    }, [fetchData, fetchSubSubcategories, refreshTrigger]);
+        setPage(1);
+        setSortBy(undefined);
+        setSortDir(undefined);
+        fetchData(1, pageSize, undefined, undefined);
+    }, [filters, refreshTrigger]);
+
+    const handleTableChange = (newPagination, _tableFilters, sorter) => {
+        const newPage     = newPagination.current;
+        const newPageSize = newPagination.pageSize;
+        const newSortBy   = sorter?.field && sorter?.order ? sorter.field : undefined;
+        const newSortDir  = sorter?.order === 'ascend' ? 'asc' : sorter?.order === 'descend' ? 'desc' : undefined;
+        setPage(newPage);
+        setPageSize(newPageSize);
+        setSortBy(newSortBy);
+        setSortDir(newSortDir);
+        fetchData(newPage, newPageSize, newSortBy, newSortDir);
+    };
 
     const handleView = (record) => {
         setSelectedBatchId(record.batchId);
@@ -89,7 +130,7 @@ function ProductBatchTable({ refreshTrigger }) {
     };
 
     const handleEditSuccess = () => {
-        fetchData();
+        fetchData(page, pageSize, sortBy, sortDir);
     };
 
     const handleDelete = (record) => {
@@ -102,11 +143,11 @@ function ProductBatchTable({ refreshTrigger }) {
             onOk: async () => {
                 try {
                     const response = await deleteProductBatch(record.batchId);
-                    if (response.data.type === 'GOOD') {
+                    if (response.data?.type === 'GOOD') {
                         message.success('Xóa lô hàng thành công');
-                        fetchData();
+                        fetchData(page, pageSize, sortBy, sortDir);
                     } else {
-                        message.error(response.data.message || 'Xóa lô hàng thất bại');
+                        message.error(response.data?.message || 'Xóa lô hàng thất bại');
                     }
                 } catch (error) {
                     message.error('Lỗi khi xóa lô hàng');
@@ -121,82 +162,113 @@ function ProductBatchTable({ refreshTrigger }) {
             title: 'ID',
             dataIndex: 'batchId',
             key: 'batchId',
-            width: '5%',
-            sorter: (a, b) => a.batchId - b.batchId,
+            width: 70,
+            sorter: true,
+            sortDirections: ['ascend', 'descend'],
         },
         {
             title: 'Danh mục',
             dataIndex: 'subSubcategoryId',
             key: 'subSubcategoryId',
-            width: '15%',
+            width: 160,
             ellipsis: true,
             render: (id) => {
                 const name = getSubSubcategoryName(id);
-                return name ? `${id}-${name}` : `#${id}`;
+                return name ? `${id} - ${name}` : `#${id}`;
             },
         },
         {
             title: 'Số lượng',
             dataIndex: 'quantity',
             key: 'quantity',
-            width: '10%',
-            render: (quantity, record) => (
-                <span>
-                    {quantity} {UNIT_LABELS[record.unit] || record.unit}
-                </span>
-            ),
-        },
-        {
-            title: 'Đơn vị',
-            dataIndex: 'unit',
-            key: 'unit',
-            width: '8%',
-            render: (unit) => (
-                <Tag color="blue">{UNIT_LABELS[unit] || unit}</Tag>
-            ),
+            width: 120,
+            sorter: true,
+            sortDirections: ['ascend', 'descend'],
+            render: (quantity, record) => `${quantity} ${UNIT_LABELS[record.unit] || record.unit}`,
         },
         {
             title: 'Trạng thái',
             dataIndex: 'processStatus',
             key: 'processStatus',
-            width: '10%',
-            render: (processStatus) => {
-                if (!processStatus) return <Tag>Chưa xác định</Tag>;
-                const statusConfig = {
-                    PENDING: { color: 'orange', label: 'Chờ xử lý' },
-                    COMPLETED: { color: 'green', label: 'Hoàn thành' },
-                    EXPIRED: { color: 'red', label: 'Hết hạn' },
-                };
-                const config = statusConfig[processStatus] || { color: 'default', label: processStatus };
-                return <Tag color={config.color}>{config.label}</Tag>;
+            width: 130,
+            render: (val) => {
+                const cfg = STATUS_CONFIG[val] || { color: 'default', label: val || 'Chưa xác định' };
+                return <Tag color={cfg.color}>{cfg.label}</Tag>;
+            },
+        },
+        {
+            title: 'Xác minh',
+            dataIndex: 'verificationType',
+            key: 'verificationType',
+            width: 120,
+            render: (val) => {
+                if (!val) return '—';
+                const cfg = VERIFICATION_CONFIG[val] || { color: 'default', label: val };
+                return <Tag color={cfg.color}>{cfg.label}</Tag>;
+            },
+        },
+        {
+            title: 'Nhà cung cấp',
+            key: 'provider',
+            width: 180,
+            render: (_, record) => {
+                const p = record.provider;
+                if (!p) return <span className="text-gray-400">—</span>;
+                const fullName = `${p.fName} ${p.lName}`.trim();
+                return (
+                    <Tooltip title={`ID: ${p.providerId}`}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Avatar
+                                size={28}
+                                src={p.avtUrl || undefined}
+                                icon={!p.avtUrl && <UserOutlined />}
+                            />
+                            <span style={{ fontSize: 13 }}>{fullName || `#${p.providerId}`}</span>
+                        </div>
+                    </Tooltip>
+                );
             },
         },
         {
             title: 'Ghi chú',
             dataIndex: 'note',
             key: 'note',
-            width: '18%',
+            width: 160,
             ellipsis: true,
-            render: (note) => note || <span style={{ color: '#999' }}>Không có ghi chú</span>,
+            render: (note) => note || <span style={{ color: '#999' }}>Không có</span>,
         },
         {
-            title: 'Nhà cung cấp',
-            dataIndex: 'providerId',
-            key: 'providerId',
-            width: '8%',
+            title: 'Ngày nhận',
+            dataIndex: 'receivedAt',
+            key: 'receivedAt',
+            width: 150,
+            sorter: true,
+            sortDirections: ['ascend', 'descend'],
+            render: (val) => (val ? dayjs(val).format('DD/MM/YYYY HH:mm') : '—'),
+        },
+        {
+            title: 'Hết hạn',
+            dataIndex: 'expiredAt',
+            key: 'expiredAt',
+            width: 150,
+            sorter: true,
+            sortDirections: ['ascend', 'descend'],
+            render: (val) => (val ? dayjs(val).format('DD/MM/YYYY HH:mm') : '—'),
         },
         {
             title: 'Ngày tạo',
             dataIndex: 'createdAt',
             key: 'createdAt',
-            width: '12%',
-            render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '-',
-            sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+            width: 150,
+            sorter: true,
+            sortDirections: ['ascend', 'descend'],
+            render: (val) => (val ? dayjs(val).format('DD/MM/YYYY HH:mm') : '—'),
         },
         {
             title: 'Thao tác',
             key: 'action',
-            width: '14%',
+            width: 120,
+            fixed: 'right',
             render: (_, record) => (
                 <Space size="small">
                     <ViewButton onClick={() => handleView(record)} />
@@ -207,28 +279,24 @@ function ProductBatchTable({ refreshTrigger }) {
         },
     ];
 
-    const handleTableChange = (newPagination) => {
-        setPagination({
-            ...pagination,
-            current: newPagination.current,
-            pageSize: newPagination.pageSize,
-        });
-    };
-
     return (
         <>
             <Table
-                className='border border-gray-200 rounded-2xl'
+                className="border border-gray-200 rounded-2xl"
                 columns={columns}
                 dataSource={data}
                 loading={loading}
                 rowKey="batchId"
                 pagination={{
-                    ...pagination,
+                    current: page,
+                    pageSize,
+                    total,
                     showSizeChanger: true,
-                    showTotal: (total) => `Tổng ${total} batch`,
+                    showTotal: (t) => `Tổng ${t} lô hàng`,
                 }}
                 onChange={handleTableChange}
+                scroll={{ x: 1300 }}
+                locale={{ emptyText: 'Không có lô hàng nào' }}
             />
 
             <ProductBatchDetailModal

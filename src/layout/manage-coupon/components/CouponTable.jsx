@@ -2,24 +2,35 @@ import { useState, useEffect, useCallback } from 'react';
 import { Table, Tag, Space, Button, Popconfirm, message, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { getCoupons, deleteCoupon } from '../../../services/couponService';
+import { getAdminCoupons, deleteCoupon } from '../../../services/couponService';
 
 function CouponTable({ filters, refreshTrigger, onEdit }) {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
+    const [sortBy, setSortBy] = useState(undefined);
+    const [sortDir, setSortDir] = useState(undefined);
 
-    const fetchData = useCallback(async (page = pagination.current, pageSize = pagination.pageSize) => {
+    const fetchData = useCallback(async (page = 1, pageSize = 20, currentSortBy, currentSortDir) => {
         setLoading(true);
         try {
-            const response = await getCoupons(page, pageSize);
+            const response = await getAdminCoupons({
+                ...filters,
+                page,
+                size: pageSize,
+                sortBy: currentSortBy,
+                sortDir: currentSortDir,
+            });
             const type = response.data?.type;
             if (type === 'GOOD') {
                 const detail = response.data.detail;
-                setData(Array.isArray(detail) ? detail : []);
-                setPagination(prev => ({ ...prev, total: Array.isArray(detail) ? detail.length : 0 }));
+                const list = Array.isArray(detail) ? detail : (detail?.content ?? []);
+                const total = detail?.totalElements ?? list.length;
+                setData(list);
+                setPagination(prev => ({ ...prev, current: page, pageSize, total }));
             } else if (type === 'SKIP_AS_GOOD') {
                 setData([]);
+                setPagination(prev => ({ ...prev, current: 1, total: 0 }));
             } else {
                 message.error(response.data?.message || 'Không thể tải dữ liệu mã giảm giá');
                 setData([]);
@@ -29,37 +40,31 @@ function CouponTable({ filters, refreshTrigger, onEdit }) {
         } finally {
             setLoading(false);
         }
-    }, [filters, pagination.current, pagination.pageSize]);
+    }, [filters]);
 
     useEffect(() => {
-        fetchData(1, pagination.pageSize);
-        setPagination(prev => ({ ...prev, current: 1 }));
+        setSortBy(undefined);
+        setSortDir(undefined);
+        fetchData(1, pagination.pageSize, undefined, undefined);
     }, [filters, refreshTrigger]);
 
-    const handleTableChange = (newPagination) => {
-        setPagination(prev => ({ ...prev, current: newPagination.current, pageSize: newPagination.pageSize }));
-        fetchData(newPagination.current, newPagination.pageSize);
+    const handleTableChange = (newPagination, _tableFilters, sorter) => {
+        const newSortBy = sorter?.field && sorter?.order ? sorter.field : undefined;
+        const newSortDir = sorter?.order === 'ascend' ? 'ASC' : sorter?.order === 'descend' ? 'DESC' : undefined;
+        setSortBy(newSortBy);
+        setSortDir(newSortDir);
+        fetchData(newPagination.current, newPagination.pageSize, newSortBy, newSortDir);
     };
 
     const handleDelete = async (record) => {
         try {
             await deleteCoupon(record.couponId);
             message.success('Đã xóa mã giảm giá');
-            fetchData();
+            fetchData(pagination.current, pagination.pageSize, sortBy, sortDir);
         } catch {
             message.error('Xóa mã giảm giá thất bại');
         }
     };
-
-    const filteredData = data.filter(item => {
-        if (filters.couponCode && !item.couponCode?.toLowerCase().includes(filters.couponCode.toLowerCase())) {
-            return false;
-        }
-        if (filters.discountType && item.discountType !== filters.discountType) {
-            return false;
-        }
-        return true;
-    });
 
     const columns = [
         {
@@ -91,6 +96,8 @@ function CouponTable({ filters, refreshTrigger, onEdit }) {
             dataIndex: 'discountValue',
             key: 'discountValue',
             width: 130,
+            sorter: true,
+            sortDirections: ['ascend', 'descend'],
             render: (val, record) =>
                 record.discountType === 'PERCENTAGE'
                     ? `${val}%`
@@ -125,10 +132,33 @@ function CouponTable({ filters, refreshTrigger, onEdit }) {
                 val === 'Y' ? <Tag color="blue">Công khai</Tag> : <Tag color="default">Riêng tư</Tag>,
         },
         {
+            title: 'Trạng thái',
+            key: 'isActive',
+            width: 120,
+            render: (_, record) => {
+                const expired = record.expiredAt && dayjs(record.expiredAt).isBefore(dayjs());
+                const exhausted = record.currentQuantity <= 0;
+                return expired || exhausted
+                    ? <Tag color="red">Hết hiệu lực</Tag>
+                    : <Tag color="green">Đang hoạt động</Tag>;
+            },
+        },
+        {
             title: 'Hết hạn',
             dataIndex: 'expiredAt',
             key: 'expiredAt',
             width: 160,
+            sorter: true,
+            sortDirections: ['ascend', 'descend'],
+            render: (val) => (val ? dayjs(val).format('DD/MM/YYYY HH:mm') : '—'),
+        },
+        {
+            title: 'Ngày tạo',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            width: 160,
+            sorter: true,
+            sortDirections: ['ascend', 'descend'],
             render: (val) => (val ? dayjs(val).format('DD/MM/YYYY HH:mm') : '—'),
         },
         {
@@ -163,12 +193,16 @@ function CouponTable({ filters, refreshTrigger, onEdit }) {
     return (
         <Table
             columns={columns}
-            dataSource={filteredData}
+            dataSource={data}
             rowKey="couponId"
             loading={loading}
-            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Tổng ${total} mã giảm giá` }}
+            pagination={{
+                ...pagination,
+                showSizeChanger: true,
+                showTotal: (total) => `Tổng ${total} mã giảm giá`,
+            }}
             onChange={handleTableChange}
-            scroll={{ x: 1100 }}
+            scroll={{ x: 1300 }}
             locale={{ emptyText: 'Không có mã giảm giá nào' }}
         />
     );

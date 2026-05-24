@@ -85,7 +85,7 @@ const ManageProduct = () => {
                 <p>Quản lý danh mục sản phẩm thực phẩm tươi</p>
             </div>
 
-            <div className="summary-cards flex flex-row justify-between gap-5">
+            {/* <div className="summary-cards flex flex-row justify-between gap-5">
                 <SummaryCard title="Tổng sản phẩm" content={7}></SummaryCard>
                 <SummaryCard title="Số danh mục" content={7} ></SummaryCard>
                 <SummaryCard title="Đang bán" variant='success' content={7} subContent={"Hiển thị trên web"}></SummaryCard>
@@ -96,7 +96,7 @@ const ManageProduct = () => {
                     <SearchBox></SearchBox>
                 </div>
                 <div className='filter'>Filter</div>
-            </div>
+            </div> */}
             <div className="data-table">
                 {/* <Table columns={productGeneralCols} dataSource={transformProductGenerals(productGenerals)} className='border border-gray-200 rounded-2xl' /> */}
                 < ProductGeneralTable />
