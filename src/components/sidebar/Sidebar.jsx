@@ -22,7 +22,7 @@ const Sidebar = ({ className = "" }) => {
     return (
         <div className={`${className} sidebar w-1/8 shrink-0 h-full flex flex-col border border-gray-200 `} >
             <Logo />
-            <div className="flex flex-col gap-2 justify-center">
+            <div className="flex flex-col gap-2 overflow-y-auto flex-1 py-2">
                 <SidebarItem
                     icon={<SpaceDashboardOutlinedIcon />}
                     name={"Tổng quan"}

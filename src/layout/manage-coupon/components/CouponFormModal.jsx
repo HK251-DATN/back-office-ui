@@ -28,6 +28,7 @@ function CouponFormModal({ open, couponId, onClose, onSuccess }) {
             if (response.data?.type === 'GOOD') {
                 const c = response.data.detail;
                 setDiscountType(c.discountType);
+                const MOCK_BUYER_GROUPS = { 8: ['NEW_CUSTOMER'], 9: ['LOYAL_CUSTOMER'] };
                 form.setFieldsValue({
                     couponCode: c.couponCode,
                     discountType: c.discountType,
@@ -38,6 +39,7 @@ function CouponFormModal({ open, couponId, onClose, onSuccess }) {
                     currentQuantity: c.currentQuantity,
                     expiredAt: c.expiredAt ? dayjs(c.expiredAt) : null,
                     publicYn: c.publicYn || 'Y',
+                    buyerGroups: MOCK_BUYER_GROUPS[id] ?? [],
                 });
             } else {
                 message.error(response.data?.message || 'Không thể tải thông tin mã giảm giá');
@@ -143,12 +145,24 @@ function CouponFormModal({ open, couponId, onClose, onSuccess }) {
 
                 {discountType === 'PERCENTAGE' && (
                     <Form.Item name="maxDiscountAmount" label="Giảm tối đa (₫)">
-                        <InputNumber min={0} style={{ width: '100%' }} placeholder="Không giới hạn nếu để trống" />
+                        <InputNumber
+                            min={0}
+                            style={{ width: '100%' }}
+                            placeholder="Không giới hạn nếu để trống"
+                            formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                            parser={(value) => value?.replace(/,/g, '') ?? ''}
+                        />
                     </Form.Item>
                 )}
 
                 <Form.Item name="minOrderValue" label="Đơn tối thiểu (₫)">
-                    <InputNumber min={0} style={{ width: '100%' }} placeholder="Không yêu cầu nếu để trống" />
+                    <InputNumber
+                        min={0}
+                        style={{ width: '100%' }}
+                        placeholder="Không yêu cầu nếu để trống"
+                        formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                        parser={(value) => value?.replace(/,/g, '') ?? ''}
+                    />
                 </Form.Item>
 
                 <div className="flex gap-4">
@@ -188,6 +202,18 @@ function CouponFormModal({ open, couponId, onClose, onSuccess }) {
                         </Select>
                     </Form.Item>
                 </div>
+
+                <Form.Item name="buyerGroups" label="Nhóm khách hàng áp dụng">
+                    <Select
+                        mode="multiple"
+                        placeholder="Áp dụng cho tất cả nếu để trống"
+                        allowClear
+                    >
+                        <Option value="NEW_CUSTOMER">Khách hàng mới</Option>
+                        <Option value="LOYAL_CUSTOMER">Khách hàng thân thiết</Option>
+                        <Option value="REGULAR_CUSTOMER">Khách hàng thông thường</Option>
+                    </Select>
+                </Form.Item>
             </Form>
         </Modal>
     );
